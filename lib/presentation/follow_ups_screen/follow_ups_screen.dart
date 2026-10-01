@@ -6,6 +6,7 @@ import '../../routes/app_routes.dart';
 import '../leads_list_screen/leads_list_screen.dart' as leads_list;
 import '../reminders_screen/reminders_screen.dart' show globalReminderMaps;
 import '../sessions_screen/sessions_screen.dart' show globalSessionMaps;
+import '../templates_screen/templates_screen.dart' show globalTemplateMaps;
 
 // ─── Agent Data ───────────────────────────────────────────────────────────────
 
@@ -598,6 +599,12 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
     'Cancelled',
   ];
 
+  // Whether a non-default filter is active (hides horizontal chips)
+  bool get _isFilterActive =>
+      _selectedStatusFilter != 'All' && _selectedStatusFilter != 'Today'
+      ? true
+      : _hasActiveFilters;
+
   Widget _buildStatusFilterBar() {
     return SizedBox(
       height: 44,
@@ -928,7 +935,9 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
             _buildHeader(filtered.length),
             if (_isSearchActive) _buildSearchBar(),
             _buildKpiRow(),
-            _buildStatusFilterBar(),
+            // Hide horizontal filter chips when a specific filter is active
+            if (!_isFilterActive) _buildStatusFilterBar(),
+            if (_isFilterActive) _buildFollowUpActiveFilterIndicator(),
             if (_hasActiveFilters) _buildActiveFilterChips(),
             if (_hasActiveFilters) _buildFilteredCountBanner(filtered.length),
             Expanded(
@@ -1008,6 +1017,138 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFollowUpActiveFilterIndicator() {
+    int count = 0;
+    final now = DateTime.now();
+    switch (_selectedStatusFilter) {
+      case 'All':
+        count = _followUps.length;
+        break;
+      case 'Today':
+        count = _followUps
+            .where(
+              (fu) =>
+                  _isToday(fu['dueDate'] as DateTime) &&
+                  fu['status'] != 'Completed',
+            )
+            .length;
+        break;
+      case 'Overdue':
+        count = _followUps
+            .where((fu) => fu['isOverdue'] == true || fu['status'] == 'Overdue')
+            .length;
+        break;
+      case 'Upcoming':
+        count = _followUps.where((fu) => fu['status'] == 'Upcoming').length;
+        break;
+      case 'Completed':
+        count = _followUps.where((fu) => fu['status'] == 'Completed').length;
+        break;
+      case 'Cancelled':
+        count = _followUps.where((fu) => fu['status'] == 'Cancelled').length;
+        break;
+    }
+    return Container(
+      color: AppTheme.surfaceLight,
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.warning,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.filter_list_rounded,
+                  size: 13,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '$_selectedStatusFilter ($count)',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => setState(() => _selectedStatusFilter = 'All'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.surface100,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.surface200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.close_rounded,
+                    size: 13,
+                    color: AppTheme.textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Clear',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _statusFilterOptions
+                    .where((f) => f != _selectedStatusFilter)
+                    .map((f) {
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedStatusFilter = f),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceLight,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppTheme.surface200),
+                          ),
+                          child: Text(
+                            f,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      );
+                    })
+                    .toList(),
+              ),
             ),
           ),
         ],
@@ -1833,7 +1974,64 @@ class _FollowUpCardState extends State<_FollowUpCard>
     final hasTwitter = (leadMap['twitter'] as String? ?? '').isNotEmpty;
     final hasTelegram = (leadMap['telegram'] as String? ?? '').isNotEmpty;
 
-    void doAction(String action, String actionKey) {
+    final isFrozen = f['status'] == 'Completed' || f['status'] == 'Cancelled';
+
+    void logAction(String actionKey, String actionLabel) {
+      if (isFrozen) return;
+      final idx = globalFollowUpMaps.indexWhere((m) => m['id'] == f['id']);
+      if (idx >= 0) {
+        globalFollowUpMaps[idx][actionKey] =
+            (globalFollowUpMaps[idx][actionKey] as int? ?? 0) + 1;
+      }
+      setState(() {
+        f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
+      });
+      widget.onUpdate();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$actionLabel logged for $customerName'),
+            backgroundColor: AppTheme.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    }
+
+    void showTemplatePicker(
+      String actionLabel,
+      String actionKey, {
+      String? platform,
+    }) {
+      final templates = globalTemplateMaps.where((t) {
+        final cat = (t['category'] as String? ?? '').toLowerCase();
+        if (platform != null) {
+          return cat.contains(platform.toLowerCase()) ||
+              cat == 'sms' ||
+              cat == 'email';
+        }
+        return true;
+      }).toList();
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _FUTemplatePickerSheet(
+          actionLabel: actionLabel,
+          templates: templates,
+          customerName: customerName,
+          isWhatsApp: platform?.toLowerCase() == 'whatsapp',
+          onUseTemplate: (_) => logAction(actionKey, actionLabel),
+          onCustomMessage: () => logAction(actionKey, actionLabel),
+        ),
+      );
+    }
+
+    void checkPreferenceAndLog(String action, String actionKey) {
       bool isPreferred = preferred.isEmpty || preferred.contains(action);
       if (!isPreferred) {
         showDialog(
@@ -1863,10 +2061,13 @@ class _FollowUpCardState extends State<_FollowUpCard>
               FilledButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  setState(() {
-                    f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
-                  });
-                  widget.onUpdate();
+                  if (action == 'WhatsApp Messages' ||
+                      action == 'Messages' ||
+                      action == 'Email') {
+                    showTemplatePicker(action, actionKey, platform: action);
+                  } else {
+                    logAction(actionKey, action);
+                  }
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.warning,
@@ -1882,10 +2083,13 @@ class _FollowUpCardState extends State<_FollowUpCard>
           ),
         );
       } else {
-        setState(() {
-          f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
-        });
-        widget.onUpdate();
+        if (action == 'WhatsApp Messages' ||
+            action == 'Messages' ||
+            action == 'Email') {
+          showTemplatePicker(action, actionKey, platform: action);
+        } else {
+          logAction(actionKey, action);
+        }
       }
     }
 
@@ -1922,10 +2126,7 @@ class _FollowUpCardState extends State<_FollowUpCard>
           ),
         );
       } else {
-        setState(() {
-          f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
-        });
-        widget.onUpdate();
+        showTemplatePicker(platform, actionKey, platform: platform);
       }
     }
 
@@ -2002,22 +2203,27 @@ class _FollowUpCardState extends State<_FollowUpCard>
                         if (idx >= 0) {
                           globalFollowUpMaps[idx]['status'] = 'Cancelled';
                           globalFollowUpMaps[idx]['cancelReason'] = reason;
+                          globalFollowUpMaps[idx]['cancelledAt'] =
+                              DateTime.now();
                         }
                         setState(() {
                           f['status'] = 'Cancelled';
                           f['cancelReason'] = reason;
+                          f['cancelledAt'] = DateTime.now();
                         });
                         widget.onUpdate();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Follow-up cancelled'),
-                            backgroundColor: AppTheme.error,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Follow-up cancelled'),
+                              backgroundColor: AppTheme.error,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                        }
                       },
                 style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
                 child: Text(
@@ -2039,8 +2245,8 @@ class _FollowUpCardState extends State<_FollowUpCard>
       backgroundColor: Colors.transparent,
       builder: (_) => DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.55,
-        maxChildSize: 0.85,
+        initialChildSize: 0.65,
+        maxChildSize: 0.92,
         builder: (_, ctrl) => Container(
           decoration: const BoxDecoration(
             color: AppTheme.surfaceLight,
@@ -2059,20 +2265,41 @@ class _FollowUpCardState extends State<_FollowUpCard>
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
+                  horizontal: 16,
                   vertical: 4,
                 ),
                 child: Row(
                   children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                      color: AppTheme.textSecondary,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        customerName,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            customerName,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            f['title'] as String,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
                     IconButton(
@@ -2093,185 +2320,201 @@ class _FollowUpCardState extends State<_FollowUpCard>
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                   children: [
                     Text(
-                      'Actions',
+                      'ACTIONS',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textSecondary,
-                        letterSpacing: 0.5,
+                        color: AppTheme.textMuted,
+                        letterSpacing: 0.8,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _ActionBtn(
-                          icon: Icons.phone_rounded,
-                          label: 'Call',
-                          color: AppTheme.success,
-                          onTap: () => doAction('Calls', 'callsDone'),
-                        ),
-                        _ActionBtn(
-                          icon: Icons.message_rounded,
-                          label: 'Message',
-                          color: const Color(0xFF8B5CF6),
-                          onTap: () => doAction('Messages', 'messagesDone'),
-                        ),
-                        _ActionBtn(
-                          icon: Icons.chat_rounded,
-                          label: 'WhatsApp',
-                          color: const Color(0xFF25D366),
-                          onTap: () =>
-                              doAction('WhatsApp Messages', 'whatsappDone'),
-                        ),
-                        _ActionBtn(
-                          icon: Icons.email_rounded,
-                          label: 'Email',
-                          color: AppTheme.primary,
-                          onTap: () => doAction('Email', 'emailDone'),
-                        ),
-                        _ActionBtn(
-                          icon: Icons.videocam_rounded,
-                          label: 'Video Call',
-                          color: const Color(0xFF0891B2),
-                          onTap: () => doAction('Video Call', 'videoDone'),
-                        ),
-                        _ActionBtn(
-                          icon: Icons.camera_alt_rounded,
-                          label: 'Instagram',
-                          color: hasInstagram
-                              ? const Color(0xFFE1306C)
-                              : AppTheme.textMuted,
-                          onTap: () => doSocialAction(
-                            'Instagram',
-                            hasInstagram,
-                            'instagramDone',
-                          ),
-                        ),
-                        _ActionBtn(
-                          icon: Icons.facebook_rounded,
-                          label: 'Facebook',
-                          color: hasFacebook
-                              ? const Color(0xFF1877F2)
-                              : AppTheme.textMuted,
-                          onTap: () => doSocialAction(
-                            'Facebook',
-                            hasFacebook,
-                            'facebookDone',
-                          ),
-                        ),
-                        _ActionBtn(
-                          icon: Icons.close_rounded,
-                          label: 'X (Twitter)',
-                          color: hasTwitter
-                              ? const Color(0xFF000000)
-                              : AppTheme.textMuted,
-                          onTap: () => doSocialAction(
-                            'X (Twitter)',
-                            hasTwitter,
-                            'twitterDone',
-                          ),
-                        ),
-                        _ActionBtn(
-                          icon: Icons.send_rounded,
-                          label: 'Telegram',
-                          color: hasTelegram
-                              ? const Color(0xFF0088CC)
-                              : AppTheme.textMuted,
-                          onTap: () => doSocialAction(
-                            'Telegram',
-                            hasTelegram,
-                            'telegramDone',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    if (f['status'] != 'Completed' &&
-                        f['status'] != 'Cancelled') ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _markComplete(context);
-                          },
-                          icon: const Icon(
-                            Icons.check_circle_rounded,
-                            size: 16,
-                          ),
-                          label: Text(
-                            'Mark Complete',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.success,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
+                    if (isFrozen) ...[
+                      _FUActionRowDisabled(
+                        icon: Icons.phone_rounded,
+                        label: 'Call',
+                        color: AppTheme.textMuted,
+                        count: f['callsDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.message_rounded,
+                        label: 'Message',
+                        color: AppTheme.textMuted,
+                        count: f['messagesDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.chat_rounded,
+                        label: 'WhatsApp',
+                        color: AppTheme.textMuted,
+                        count: f['whatsappDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.email_rounded,
+                        label: 'Email',
+                        color: AppTheme.textMuted,
+                        count: f['emailDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.videocam_rounded,
+                        label: 'Video Call',
+                        color: AppTheme.textMuted,
+                        count: f['videoDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Instagram',
+                        color: AppTheme.textMuted,
+                        count: f['instagramDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.facebook_rounded,
+                        label: 'Facebook',
+                        color: AppTheme.textMuted,
+                        count: f['facebookDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.close_rounded,
+                        label: 'X (Twitter)',
+                        color: AppTheme.textMuted,
+                        count: f['twitterDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.send_rounded,
+                        label: 'Telegram',
+                        color: AppTheme.textMuted,
+                        count: f['telegramDone'] as int? ?? 0,
+                      ),
+                    ] else ...[
+                      _FUActionRow(
+                        icon: Icons.phone_rounded,
+                        label: 'Call',
+                        color: AppTheme.success,
+                        count: f['callsDone'] as int? ?? 0,
+                        onTap: () =>
+                            checkPreferenceAndLog('Calls', 'callsDone'),
+                      ),
+                      _FUActionRow(
+                        icon: Icons.message_rounded,
+                        label: 'Message',
+                        color: const Color(0xFF8B5CF6),
+                        count: f['messagesDone'] as int? ?? 0,
+                        onTap: () => showTemplatePicker(
+                          'Message',
+                          'messagesDone',
+                          platform: 'SMS',
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            cancelFollowUp();
-                          },
-                          icon: const Icon(Icons.cancel_outlined, size: 16),
-                          label: Text(
-                            'Cancel Follow-up',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.error,
-                            side: BorderSide(color: AppTheme.error),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
+                      _FUActionRow(
+                        icon: Icons.chat_rounded,
+                        label: 'WhatsApp',
+                        color: const Color(0xFF25D366),
+                        count: f['whatsappDone'] as int? ?? 0,
+                        onTap: () => showTemplatePicker(
+                          'WhatsApp',
+                          'whatsappDone',
+                          platform: 'WhatsApp',
                         ),
                       ),
-                      const SizedBox(height: 8),
-                    ],
-                    const Divider(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton.icon(
-                        onPressed: () {
+                      _FUActionRow(
+                        icon: Icons.email_rounded,
+                        label: 'Email',
+                        color: AppTheme.primary,
+                        count: f['emailDone'] as int? ?? 0,
+                        onTap: () => showTemplatePicker(
+                          'Email',
+                          'emailDone',
+                          platform: 'Email',
+                        ),
+                      ),
+                      _FUActionRow(
+                        icon: Icons.videocam_rounded,
+                        label: 'Video Call',
+                        color: const Color(0xFF0891B2),
+                        count: f['videoDone'] as int? ?? 0,
+                        onTap: () =>
+                            checkPreferenceAndLog('Video Call', 'videoDone'),
+                      ),
+                      _FUActionRow(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Instagram',
+                        color: hasInstagram
+                            ? const Color(0xFFE1306C)
+                            : AppTheme.textMuted,
+                        count: f['instagramDone'] as int? ?? 0,
+                        onTap: () => doSocialAction(
+                          'Instagram',
+                          hasInstagram,
+                          'instagramDone',
+                        ),
+                      ),
+                      _FUActionRow(
+                        icon: Icons.facebook_rounded,
+                        label: 'Facebook',
+                        color: hasFacebook
+                            ? const Color(0xFF1877F2)
+                            : AppTheme.textMuted,
+                        count: f['facebookDone'] as int? ?? 0,
+                        onTap: () => doSocialAction(
+                          'Facebook',
+                          hasFacebook,
+                          'facebookDone',
+                        ),
+                      ),
+                      _FUActionRow(
+                        icon: Icons.close_rounded,
+                        label: 'X (Twitter)',
+                        color: hasTwitter
+                            ? const Color(0xFF1DA1F2)
+                            : AppTheme.textMuted,
+                        count: f['twitterDone'] as int? ?? 0,
+                        onTap: () => doSocialAction(
+                          'X (Twitter)',
+                          hasTwitter,
+                          'twitterDone',
+                        ),
+                      ),
+                      _FUActionRow(
+                        icon: Icons.send_rounded,
+                        label: 'Telegram',
+                        color: hasTelegram
+                            ? const Color(0xFF0088CC)
+                            : AppTheme.textMuted,
+                        count: f['telegramDone'] as int? ?? 0,
+                        onTap: () => doSocialAction(
+                          'Telegram',
+                          hasTelegram,
+                          'telegramDone',
+                        ),
+                      ),
+                      const Divider(height: 20),
+                      _FUActionRow(
+                        icon: Icons.check_circle_rounded,
+                        label: 'Mark as Completed',
+                        color: const Color(0xFF3D9970),
+                        onTap: () {
                           Navigator.pop(context);
-                          _showDetailsSheet(context);
+                          _markComplete(context);
                         },
-                        icon: Icon(
-                          Icons.info_outline_rounded,
-                          size: 16,
-                          color: AppTheme.primary,
-                        ),
-                        label: Text(
-                          'See Details',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
                       ),
+                      _FUActionRow(
+                        icon: Icons.cancel_outlined,
+                        label: 'Cancel Follow-up',
+                        color: AppTheme.error,
+                        onTap: () {
+                          Navigator.pop(context);
+                          cancelFollowUp();
+                        },
+                      ),
+                      const Divider(height: 20),
+                    ],
+                    _FUActionRow(
+                      icon: Icons.info_outline_rounded,
+                      label: 'See Details',
+                      color: AppTheme.primary,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showDetailsSheet(context);
+                      },
                     ),
                   ],
                 ),
@@ -2744,120 +2987,178 @@ class _FollowUpCardState extends State<_FollowUpCard>
                     // ── Actions ──────────────────────────────────────────────
                     _SectionHeader(title: 'Actions'),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _ActionBtn(
-                          icon: Icons.phone_rounded,
-                          label: 'Call',
-                          color: AppTheme.success,
-                          onTap: () {
-                            setState(() {
-                              f['callsDone'] =
-                                  (f['callsDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                        _ActionBtn(
-                          icon: Icons.message_rounded,
-                          label: 'Message',
-                          color: const Color(0xFF8B5CF6),
-                          onTap: () {
-                            setState(() {
-                              f['messagesDone'] =
-                                  (f['messagesDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                        _ActionBtn(
-                          icon: Icons.chat_rounded,
-                          label: 'WhatsApp',
-                          color: const Color(0xFF25D366),
-                          onTap: () {
-                            setState(() {
-                              f['whatsappDone'] =
-                                  (f['whatsappDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                        _ActionBtn(
-                          icon: Icons.email_rounded,
-                          label: 'Email',
-                          color: AppTheme.primary,
-                          onTap: () {
-                            setState(() {
-                              f['emailDone'] =
-                                  (f['emailDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                        _ActionBtn(
-                          icon: Icons.videocam_rounded,
-                          label: 'Video Call',
-                          color: const Color(0xFF0891B2),
-                          onTap: () {
-                            setState(() {
-                              f['videoDone'] =
-                                  (f['videoDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                        _ActionBtn(
-                          icon: Icons.camera_alt_rounded,
-                          label: 'Instagram',
-                          color: const Color(0xFFE1306C),
-                          onTap: () {
-                            setState(() {
-                              f['instagramDone'] =
-                                  (f['instagramDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                        _ActionBtn(
-                          icon: Icons.facebook_rounded,
-                          label: 'Facebook',
-                          color: const Color(0xFF1877F2),
-                          onTap: () {
-                            setState(() {
-                              f['facebookDone'] =
-                                  (f['facebookDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                        _ActionBtn(
-                          icon: Icons.close_rounded,
-                          label: 'X (Twitter)',
-                          color: const Color(0xFF000000),
-                          onTap: () {
-                            setState(() {
-                              f['twitterDone'] =
-                                  (f['twitterDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                        _ActionBtn(
-                          icon: Icons.send_rounded,
-                          label: 'Telegram',
-                          color: const Color(0xFF0088CC),
-                          onTap: () {
-                            setState(() {
-                              f['telegramDone'] =
-                                  (f['telegramDone'] as int? ?? 0) + 1;
-                            });
-                            widget.onUpdate();
-                          },
-                        ),
-                      ],
-                    ),
+                    if (f['status'] == 'Completed' ||
+                        f['status'] == 'Cancelled') ...[
+                      _FUActionRowDisabled(
+                        icon: Icons.phone_rounded,
+                        label: 'Call',
+                        color: AppTheme.textMuted,
+                        count: f['callsDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.message_rounded,
+                        label: 'Message',
+                        color: AppTheme.textMuted,
+                        count: f['messagesDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.chat_rounded,
+                        label: 'WhatsApp',
+                        color: AppTheme.textMuted,
+                        count: f['whatsappDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.email_rounded,
+                        label: 'Email',
+                        color: AppTheme.textMuted,
+                        count: f['emailDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.videocam_rounded,
+                        label: 'Video Call',
+                        color: AppTheme.textMuted,
+                        count: f['videoDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Instagram',
+                        color: AppTheme.textMuted,
+                        count: f['instagramDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.facebook_rounded,
+                        label: 'Facebook',
+                        color: AppTheme.textMuted,
+                        count: f['facebookDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.close_rounded,
+                        label: 'X (Twitter)',
+                        color: AppTheme.textMuted,
+                        count: f['twitterDone'] as int? ?? 0,
+                      ),
+                      _FUActionRowDisabled(
+                        icon: Icons.send_rounded,
+                        label: 'Telegram',
+                        color: AppTheme.textMuted,
+                        count: f['telegramDone'] as int? ?? 0,
+                      ),
+                    ] else ...[
+                      _FUActionRow(
+                        icon: Icons.phone_rounded,
+                        label: 'Call',
+                        color: AppTheme.success,
+                        count: f['callsDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['callsDone'] = (f['callsDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                      _FUActionRow(
+                        icon: Icons.message_rounded,
+                        label: 'Message',
+                        color: const Color(0xFF8B5CF6),
+                        count: f['messagesDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['messagesDone'] =
+                                (f['messagesDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                      _FUActionRow(
+                        icon: Icons.chat_rounded,
+                        label: 'WhatsApp',
+                        color: const Color(0xFF25D366),
+                        count: f['whatsappDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['whatsappDone'] =
+                                (f['whatsappDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                      _FUActionRow(
+                        icon: Icons.email_rounded,
+                        label: 'Email',
+                        color: AppTheme.primary,
+                        count: f['emailDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['emailDone'] = (f['emailDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                      _FUActionRow(
+                        icon: Icons.videocam_rounded,
+                        label: 'Video Call',
+                        color: const Color(0xFF0891B2),
+                        count: f['videoDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['videoDone'] = (f['videoDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                      _FUActionRow(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Instagram',
+                        color: const Color(0xFFE1306C),
+                        count: f['instagramDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['instagramDone'] =
+                                (f['instagramDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                      _FUActionRow(
+                        icon: Icons.facebook_rounded,
+                        label: 'Facebook',
+                        color: const Color(0xFF1877F2),
+                        count: f['facebookDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['facebookDone'] =
+                                (f['facebookDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                      _FUActionRow(
+                        icon: Icons.close_rounded,
+                        label: 'X (Twitter)',
+                        color: const Color(0xFF1DA1F2),
+                        count: f['twitterDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['twitterDone'] =
+                                (f['twitterDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                      _FUActionRow(
+                        icon: Icons.send_rounded,
+                        label: 'Telegram',
+                        color: const Color(0xFF0088CC),
+                        count: f['telegramDone'] as int? ?? 0,
+                        onTap: () {
+                          setState(() {
+                            f['telegramDone'] =
+                                (f['telegramDone'] as int? ?? 0) + 1;
+                          });
+                          widget.onUpdate();
+                        },
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     if (f['status'] != 'Completed')
                       SizedBox(
@@ -3627,70 +3928,6 @@ class _FollowUpCardState extends State<_FollowUpCard>
                                   ),
                                 ),
                               ],
-                            ),
-                          ],
-                          if (hasActivity) ...[
-                            const SizedBox(height: 8),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  if (callsDone > 0)
-                                    _CountChip(
-                                      icon: Icons.phone_rounded,
-                                      count: callsDone,
-                                      color: AppTheme.success,
-                                    ),
-                                  if (msgDone > 0)
-                                    _CountChip(
-                                      icon: Icons.message_rounded,
-                                      count: msgDone,
-                                      color: const Color(0xFF8B5CF6),
-                                    ),
-                                  if (waDone > 0)
-                                    _CountChip(
-                                      icon: Icons.chat_rounded,
-                                      count: waDone,
-                                      color: const Color(0xFF25D366),
-                                    ),
-                                  if (emailDone > 0)
-                                    _CountChip(
-                                      icon: Icons.email_rounded,
-                                      count: emailDone,
-                                      color: AppTheme.primary,
-                                    ),
-                                  if (videoDone > 0)
-                                    _CountChip(
-                                      icon: Icons.videocam_rounded,
-                                      count: videoDone,
-                                      color: const Color(0xFF0891B2),
-                                    ),
-                                  if (instagramDone > 0)
-                                    _CountChip(
-                                      icon: Icons.camera_alt_rounded,
-                                      count: instagramDone,
-                                      color: const Color(0xFFE1306C),
-                                    ),
-                                  if (facebookDone > 0)
-                                    _CountChip(
-                                      icon: Icons.facebook_rounded,
-                                      count: facebookDone,
-                                      color: const Color(0xFF1877F2),
-                                    ),
-                                  if (twitterDone > 0)
-                                    _CountChip(
-                                      icon: Icons.close_rounded,
-                                      count: twitterDone,
-                                      color: const Color(0xFF000000),
-                                    ),
-                                  if (telegramDone > 0)
-                                    _CountChip(
-                                      icon: Icons.send_rounded,
-                                      count: telegramDone,
-                                      color: const Color(0xFF0088CC),
-                                    ),
-                                ],
-                              ),
                             ),
                           ],
                           // Status tag on card
@@ -6195,6 +6432,521 @@ class _ActionBtn extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Follow-up Action Row (full-width with inline count) ──────────────────────
+
+class _FUActionRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  final int count;
+  const _FUActionRow({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.count = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: color.withAlpha(12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withAlpha(40)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: color.withAlpha(25),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 16, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+            if (count > 0) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withAlpha(60)),
+                ),
+                child: Text(
+                  '$count',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
+            ] else ...[
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: color.withAlpha(150),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Follow-up Disabled Action Row ───────────────────────────────────────────
+
+class _FUActionRowDisabled extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final int count;
+  const _FUActionRowDisabled({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.count = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.surface100,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.surface200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppTheme.surface200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ),
+          if (count > 0) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.surface200,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock_rounded, size: 10, color: AppTheme.textMuted),
+                  const SizedBox(width: 3),
+                  Text(
+                    '$count',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            Icon(Icons.lock_rounded, size: 14, color: color),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Follow-up Template Picker Sheet ─────────────────────────────────────────
+
+class _FUTemplatePickerSheet extends StatefulWidget {
+  final String actionLabel;
+  final List<Map<String, dynamic>> templates;
+  final String customerName;
+  final bool isWhatsApp;
+  final void Function(String templateBody) onUseTemplate;
+  final VoidCallback onCustomMessage;
+
+  const _FUTemplatePickerSheet({
+    required this.actionLabel,
+    required this.templates,
+    required this.customerName,
+    this.isWhatsApp = false,
+    required this.onUseTemplate,
+    required this.onCustomMessage,
+  });
+
+  @override
+  State<_FUTemplatePickerSheet> createState() => _FUTemplatePickerSheetState();
+}
+
+class _FUTemplatePickerSheetState extends State<_FUTemplatePickerSheet> {
+  final _customCtrl = TextEditingController();
+  bool _showCustom = false;
+
+  @override
+  void dispose() {
+    _customCtrl.dispose();
+    super.dispose();
+  }
+
+  void _openWhatsApp(String message) {
+    Navigator.pop(context);
+    widget.onUseTemplate(message);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Opening WhatsApp for ${widget.customerName}...'),
+        backgroundColor: const Color(0xFF25D366),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.surface200,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: widget.isWhatsApp
+                          ? const Color(0xFF25D366).withAlpha(20)
+                          : AppTheme.primary.withAlpha(20),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      widget.isWhatsApp
+                          ? Icons.chat_rounded
+                          : Icons.description_rounded,
+                      color: widget.isWhatsApp
+                          ? const Color(0xFF25D366)
+                          : AppTheme.primary,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.actionLabel} Templates',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          'To: ${widget.customerName}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!_showCustom) ...[
+                      if (widget.templates.isNotEmpty) ...[
+                        Text(
+                          'Saved Templates',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...widget.templates.map((t) {
+                          final color =
+                              t['color'] as Color? ?? AppTheme.primary;
+                          return GestureDetector(
+                            onTap: () {
+                              final body = (t['body'] as String? ?? '')
+                                  .replaceAll(
+                                    '@customer_name',
+                                    widget.customerName,
+                                  );
+                              if (widget.isWhatsApp) {
+                                _openWhatsApp(body);
+                              } else {
+                                Navigator.pop(context);
+                                widget.onUseTemplate(body);
+                              }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: color.withAlpha(10),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: color.withAlpha(50)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        t['icon'] as IconData? ??
+                                            Icons.description_rounded,
+                                        size: 14,
+                                        color: color,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          t['name'] as String? ?? '',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: color,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: color.withAlpha(20),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          t['category'] as String? ?? '',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w600,
+                                            color: color,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    (t['body'] as String? ?? '').replaceAll(
+                                      '@customer_name',
+                                      widget.customerName,
+                                    ),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      color: AppTheme.textSecondary,
+                                      height: 1.4,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 8),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                      ],
+                      GestureDetector(
+                        onTap: () => setState(() => _showCustom = true),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.surface200),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.edit_rounded,
+                                size: 18,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Write Custom Message',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              const Spacer(),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: AppTheme.textMuted,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => setState(() => _showCustom = false),
+                            child: const Icon(
+                              Icons.arrow_back_rounded,
+                              size: 20,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Custom Message',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _customCtrl,
+                        maxLines: 5,
+                        autofocus: true,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          hintText:
+                              'Type your message to ${widget.customerName}...',
+                          filled: true,
+                          fillColor: AppTheme.surface100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.all(14),
+                        ),
+                        style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: _customCtrl.text.trim().isEmpty
+                              ? null
+                              : () {
+                                  if (widget.isWhatsApp) {
+                                    _openWhatsApp(_customCtrl.text.trim());
+                                  } else {
+                                    Navigator.pop(context);
+                                    widget.onCustomMessage();
+                                  }
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: widget.isWhatsApp
+                                ? const Color(0xFF25D366)
+                                : AppTheme.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            widget.isWhatsApp
+                                ? 'Open WhatsApp'
+                                : 'Send Message',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
             ),
           ],

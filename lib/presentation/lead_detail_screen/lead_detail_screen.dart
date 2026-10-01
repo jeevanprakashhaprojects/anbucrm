@@ -347,7 +347,13 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                     Icons.arrow_back_rounded,
                     color: Colors.white,
                   ),
-                  onPressed: () => context.go(AppRoutes.leadsListScreen),
+                  onPressed: () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      context.go(AppRoutes.leadsListScreen);
+                    }
+                  },
                 ),
                 const Spacer(),
                 IconButton(
@@ -1912,6 +1918,85 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
           icon: Icons.note_rounded,
           color: AppTheme.primary,
           category: 'Note',
+        ),
+      );
+    }
+    // Add session activity timeline entries
+    final activityTimeline =
+        _fullMap['activityTimeline'] as List<dynamic>? ?? [];
+    for (final act in activityTimeline) {
+      final actMap = act as Map<String, dynamic>;
+      final action =
+          actMap['type'] as String? ?? actMap['title'] as String? ?? 'Activity';
+      final detail = actMap['detail'] as String? ?? '';
+      final timestamp = actMap['timestamp'] as DateTime? ?? now;
+      IconData icon;
+      Color color;
+      switch (action) {
+        case 'Call':
+          icon = Icons.phone_rounded;
+          color = AppTheme.success;
+          break;
+        case 'Message':
+          icon = Icons.message_rounded;
+          color = const Color(0xFF8B5CF6);
+          break;
+        case 'WhatsApp':
+          icon = Icons.chat_rounded;
+          color = const Color(0xFF25D366);
+          break;
+        case 'Email':
+          icon = Icons.email_rounded;
+          color = AppTheme.primary;
+          break;
+        case 'Video Call':
+          icon = Icons.videocam_rounded;
+          color = const Color(0xFF0891B2);
+          break;
+        case 'Instagram':
+          icon = Icons.camera_alt_rounded;
+          color = const Color(0xFFE1306C);
+          break;
+        case 'Facebook':
+          icon = Icons.facebook_rounded;
+          color = const Color(0xFF1877F2);
+          break;
+        case 'X (Twitter)':
+          icon = Icons.close_rounded;
+          color = const Color(0xFF1DA1F2);
+          break;
+        case 'Telegram':
+          icon = Icons.send_rounded;
+          color = const Color(0xFF0088CC);
+          break;
+        case 'Session Completed':
+          icon = Icons.check_circle_rounded;
+          color = AppTheme.success;
+          break;
+        case 'Session Cancelled':
+          icon = Icons.cancel_rounded;
+          color = AppTheme.error;
+          break;
+        case 'Session Rescheduled':
+          icon = Icons.event_repeat_rounded;
+          color = const Color(0xFF8B5CF6);
+          break;
+        case 'Session Started':
+          icon = Icons.play_circle_rounded;
+          color = AppTheme.primary;
+          break;
+        default:
+          icon = Icons.event_note_rounded;
+          color = AppTheme.textMuted;
+      }
+      events.add(
+        _TimelineEvent(
+          title: action,
+          description: detail,
+          dateTime: timestamp,
+          icon: icon,
+          color: color,
+          category: 'Session',
         ),
       );
     }

@@ -8,6 +8,7 @@ import '../leads_list_screen/leads_list_screen.dart' as leads_list;
 import '../leads_list_screen/widgets/lead_card_widget.dart'
     show globalStarredLeadIds;
 import '../reminders_screen/reminders_screen.dart' show globalReminderMaps;
+import '../templates_screen/templates_screen.dart' show globalTemplateMaps;
 
 // ─── Agent Data ───────────────────────────────────────────────────────────────
 
@@ -83,6 +84,32 @@ _AgentInfo _agentByName(String name) {
       color: AppTheme.primary,
     ),
   );
+}
+
+// ─── Activity Timeline Logger ─────────────────────────────────────────────────
+
+void _logSessionActivityToLead(
+  String leadId,
+  String leadName,
+  String action,
+  String detail,
+) {
+  final idx = leads_list.globalLeads.indexWhere(
+    (m) => (leadId.isNotEmpty && m['id'] == leadId) || m['name'] == leadName,
+  );
+  if (idx < 0) return;
+  final activities =
+      (leads_list.globalLeads[idx]['activityTimeline'] as List<dynamic>?) ??
+      <dynamic>[];
+  final newActivity = {
+    'id': 'act-${DateTime.now().millisecondsSinceEpoch}',
+    'type': action,
+    'title': action,
+    'detail': detail,
+    'timestamp': DateTime.now(),
+  };
+  activities.insert(0, newActivity);
+  leads_list.globalLeads[idx]['activityTimeline'] = activities;
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
@@ -430,6 +457,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   List<String> _selectedHosts = [];
   List<String> _selectedTypes = [];
+  List<String> _selectedStatuses = [];
   bool? _existingCustomerFilter;
   DateTime? _dateFrom;
   DateTime? _dateTo;
@@ -442,6 +470,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     'Today',
     'All',
     'Dues',
+    'Rescheduled',
     'Completed',
     'Appointments',
     'Call Backs',
@@ -451,6 +480,9 @@ class _SessionsScreenState extends State<SessionsScreen> {
   static const _typeOptions = ['Video Call', 'Appointment', 'Call Back'];
 
   List<String> get _hostOptions => _kAgents.map((a) => a.name).toList();
+
+  // Whether a filter sheet filter is active (hides horizontal chips)
+  bool get _isFilterActive => _hasActiveFilters;
 
   @override
   void initState() {
@@ -478,6 +510,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
   bool get _hasActiveFilters =>
       _selectedHosts.isNotEmpty ||
       _selectedTypes.isNotEmpty ||
+      _selectedStatuses.isNotEmpty ||
       _existingCustomerFilter != null ||
       _dateFrom != null ||
       _dateTo != null;
@@ -489,7 +522,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
       bool matchesFilter = true;
       switch (_selectedFilter) {
         case 'All':
-          // Show ALL sessions including cancelled and completed
           matchesFilter = true;
           break;
         case 'Today':
@@ -503,6 +535,9 @@ class _SessionsScreenState extends State<SessionsScreen> {
               d.isBefore(now) &&
               s['status'] != 'Completed' &&
               s['status'] != 'Cancelled';
+          break;
+        case 'Rescheduled':
+          matchesFilter = s['status'] == 'Rescheduled';
           break;
         case 'Completed':
           matchesFilter = s['status'] == 'Completed';
@@ -538,6 +573,28 @@ class _SessionsScreenState extends State<SessionsScreen> {
           _selectedHosts.isEmpty || _selectedHosts.contains(s['host']);
       final matchesType =
           _selectedTypes.isEmpty || _selectedTypes.contains(s['type']);
+      // Status filter from filter sheet
+      bool matchesStatus = true;
+      if (_selectedStatuses.isNotEmpty) {
+        final sStatus = s['status'] as String? ?? '';
+        final sDate = s['date'] as DateTime;
+        matchesStatus = _selectedStatuses.any((st) {
+          switch (st) {
+            case 'Upcoming':
+              return sStatus == 'Scheduled' && !sDate.isBefore(now);
+            case 'Completed':
+              return sStatus == 'Completed';
+            case 'Dues':
+              return sStatus == 'Scheduled' && sDate.isBefore(now);
+            case 'Rescheduled':
+              return sStatus == 'Rescheduled';
+            case 'Cancelled':
+              return sStatus == 'Cancelled';
+            default:
+              return false;
+          }
+        });
+      }
       final matchesExisting =
           _existingCustomerFilter == null ||
           (_existingCustomerFilter == true &&
@@ -554,6 +611,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
           matchesSearch &&
           matchesHost &&
           matchesType &&
+          matchesStatus &&
           matchesExisting &&
           matchesDate;
     }).toList();
@@ -570,7 +628,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
       if (aIsToday && !bIsToday) return -1;
       if (!aIsToday && bIsToday) return 1;
       if (aIsToday && bIsToday) return aDate.compareTo(bDate);
-      return bDate.compareTo(aDate); // newest first for non-today
+      return bDate.compareTo(aDate);
     });
     return result;
   }
@@ -593,15 +651,17 @@ class _SessionsScreenState extends State<SessionsScreen> {
       builder: (_) => _FilterSheet(
         selectedHosts: List.from(_selectedHosts),
         selectedTypes: List.from(_selectedTypes),
+        selectedStatuses: List.from(_selectedStatuses),
         existingCustomerFilter: _existingCustomerFilter,
         hostOptions: _hostOptions,
         typeOptions: _typeOptions,
         dateFrom: _dateFrom,
         dateTo: _dateTo,
-        onApply: (hosts, types, existingCustomer, from, to) {
+        onApply: (hosts, types, statuses, existingCustomer, from, to) {
           setState(() {
             _selectedHosts = hosts;
             _selectedTypes = types;
+            _selectedStatuses = statuses;
             _existingCustomerFilter = existingCustomer;
             _dateFrom = from;
             _dateTo = to;
@@ -724,6 +784,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
     setState(() {
       _selectedHosts = [];
       _selectedTypes = [];
+      _selectedStatuses = [];
       _existingCustomerFilter = null;
       _dateFrom = null;
       _dateTo = null;
@@ -1033,7 +1094,10 @@ class _SessionsScreenState extends State<SessionsScreen> {
             _buildHeader(),
             if (_isSearchActive) _buildSearchBar(),
             _buildKpiRow(),
-            _buildStatusFilterBar(),
+            // Always show horizontal filter chips (hide only when filter sheet filters are active)
+            if (!_isFilterActive) _buildStatusFilterBar(),
+            // When filter sheet filter is active, show compact filter indicator
+            if (_isFilterActive) _buildActiveFilterIndicator(),
             if (_hasActiveFilters) _buildActiveFilterChips(),
             if (_hasActiveFilters || _selectedFilter != 'All')
               _buildFilteredCountBanner(filtered.length),
@@ -1301,6 +1365,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
                     s['status'] != 'Cancelled';
               }).length;
               break;
+            case 'Rescheduled':
+              count = _sessions
+                  .where((s) => s['status'] == 'Rescheduled')
+                  .length;
+              break;
             case 'Completed':
               count = _sessions.where((s) => s['status'] == 'Completed').length;
               break;
@@ -1362,6 +1431,12 @@ class _SessionsScreenState extends State<SessionsScreen> {
             (t) => _ActiveFilterChip(
               label: 'Type: $t',
               onRemove: () => setState(() => _selectedTypes.remove(t)),
+            ),
+          ),
+          ..._selectedStatuses.map(
+            (st) => _ActiveFilterChip(
+              label: 'Status: $st',
+              onRemove: () => setState(() => _selectedStatuses.remove(st)),
             ),
           ),
           if (_existingCustomerFilter != null)
@@ -1479,6 +1554,146 @@ class _SessionsScreenState extends State<SessionsScreen> {
       ),
     );
   }
+
+  Widget _buildActiveFilterIndicator() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    int count = 0;
+    switch (_selectedFilter) {
+      case 'All':
+        count = _sessions.length;
+        break;
+      case 'Today':
+        count = _sessions.where((s) {
+          final d = s['date'] as DateTime;
+          final day = DateTime(d.year, d.month, d.day);
+          return day == today;
+        }).length;
+        break;
+      case 'Dues':
+        count = _sessions.where((s) {
+          final d = s['date'] as DateTime;
+          return d.isBefore(now) &&
+              s['status'] != 'Completed' &&
+              s['status'] != 'Cancelled';
+        }).length;
+        break;
+      case 'Completed':
+        count = _sessions.where((s) => s['status'] == 'Completed').length;
+        break;
+      case 'Appointments':
+        count = _sessions.where((s) => s['type'] == 'Appointment').length;
+        break;
+      case 'Call Backs':
+        count = _sessions.where((s) => s['type'] == 'Call Back').length;
+        break;
+      case 'Video Call':
+        count = _sessions.where((s) => s['type'] == 'Video Call').length;
+        break;
+      case 'Cancelled':
+        count = _sessions.where((s) => s['status'] == 'Cancelled').length;
+        break;
+    }
+    return Container(
+      color: AppTheme.surfaceLight,
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.primary,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.filter_list_rounded,
+                  size: 13,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '$_selectedFilter ($count)',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => setState(() => _selectedFilter = 'Today'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.surface100,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.surface200),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.close_rounded,
+                    size: 13,
+                    color: AppTheme.textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Clear',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          // Show all filter chips in a scrollable row
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _statusFilters.where((f) => f != _selectedFilter).map(
+                  (f) {
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedFilter = f),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceLight,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppTheme.surface200),
+                        ),
+                        child: Text(
+                          f,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ─── Session Card ─────────────────────────────────────────────────────────────
@@ -1549,6 +1764,7 @@ class _SessionCardState extends State<_SessionCard>
   String _computedStatusLabel(Map<String, dynamic> s) {
     final status = s['status'] as String? ?? '';
     if (status == 'In Progress') return 'In Progress';
+    if (status == 'Rescheduled') return 'Rescheduled';
     if (status == 'Completed') {
       final endedAt = s['endedAt'] as DateTime?;
       final date = s['date'] as DateTime;
@@ -1577,6 +1793,8 @@ class _SessionCardState extends State<_SessionCard>
     switch (label) {
       case 'In Progress':
         return AppTheme.error;
+      case 'Rescheduled':
+        return const Color(0xFF8B5CF6);
       case 'Completed':
       case 'Completed On Time':
         return AppTheme.success;
@@ -1970,6 +2188,8 @@ class _SessionCardState extends State<_SessionCard>
                         if (idx >= 0) {
                           globalSessionMaps[idx]['status'] = 'Cancelled';
                           globalSessionMaps[idx]['cancelReason'] = reason;
+                          globalSessionMaps[idx]['cancelledAt'] =
+                              DateTime.now();
                           final existingNotes =
                               globalSessionMaps[idx]['notes'] as String? ?? '';
                           globalSessionMaps[idx]['notes'] =
@@ -1979,6 +2199,7 @@ class _SessionCardState extends State<_SessionCard>
                         }
                         s['status'] = 'Cancelled';
                         s['cancelReason'] = reason;
+                        s['cancelledAt'] = DateTime.now();
                         widget.onUpdate();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -2510,7 +2731,56 @@ class _SessionCardState extends State<_SessionCard>
                 globalSessionMaps[idx]['followUpScheduled'] = scheduleFollowUp;
                 if (scheduleFollowUp && followUpDate != null) {
                   globalSessionMaps[idx]['followUpDate'] = followUpDate;
-                  final fuType = nextActionType ?? 'Calls';
+                  globalSessionMaps[idx]['rescheduledSessionType'] =
+                      nextActionType ?? 'Appointment';
+                  globalSessionMaps[idx]['rescheduledSessionDate'] =
+                      followUpDate;
+                  // Create new scheduled session
+                  final cName = s['linkedLead'] as String;
+                  final cId = s['linkedLeadId'] as String? ?? '';
+                  final fuType = nextActionType ?? 'Appointment';
+                  final newSession = {
+                    'id': 'ses-next-${DateTime.now().millisecondsSinceEpoch}',
+                    'title': '$fuType with $cName',
+                    'type': fuType == 'Follow Up' ? 'Appointment' : fuType,
+                    'status': 'Scheduled',
+                    'date': followUpDate,
+                    'host': s['host'] as String,
+                    'hostInitials': s['hostInitials'] as String,
+                    'participants': s['participants'],
+                    'linkedLead': cName,
+                    'linkedLeadId': cId,
+                    'customerPhone': s['customerPhone'] ?? '',
+                    'preferredContact': s['preferredContact'] ?? <String>[],
+                    'meetingLink': fuType == 'Video Call'
+                        ? 'meet.google.com/${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}'
+                        : '',
+                    'platform': fuType == 'Video Call'
+                        ? 'Online'
+                        : fuType == 'Appointment'
+                        ? 'In-Person'
+                        : 'Phone',
+                    'recording': false,
+                    'notes': 'Follow-up from completed session: ${s['title']}',
+                    'actionItems': <String>[],
+                    'outcome': '',
+                    'rating': 0,
+                    'agenda': '',
+                    'location': '',
+                    'reminderSent': false,
+                    'followUpScheduled': false,
+                    'dealValue': s['dealValue'] ?? 0.0,
+                    'priority': s['priority'] ?? 'Medium',
+                    'createdAt': DateTime.now(),
+                    'videoCallCount': 0,
+                    'callCount': 0,
+                    'appointmentCount': 0,
+                    'isExistingCustomer': s['isExistingCustomer'] ?? false,
+                    'rescheduledFromId': s['id'],
+                    'interestTags': s['interestTags'] ?? <String>[],
+                  };
+                  globalSessionMaps.insert(0, newSession);
+                  // Also create follow-up
                   final newFu = {
                     'id': 'fu-ses-${DateTime.now().millisecondsSinceEpoch}',
                     'title': 'Follow up after session: ${s['title']}',
@@ -2520,8 +2790,8 @@ class _SessionCardState extends State<_SessionCard>
                     'dueDate': followUpDate,
                     'assignedAgent': s['host'] as String,
                     'agentInitials': s['hostInitials'] as String,
-                    'linkedLead': s['linkedLead'] as String,
-                    'linkedLeadId': s['linkedLeadId'] as String? ?? '',
+                    'linkedLead': cName,
+                    'linkedLeadId': cId,
                     'customerPhone': s['customerPhone'] as String? ?? '',
                     'notes':
                         'Post-session follow-up. Outcome: $outcome. Next action: $fuType',
@@ -2552,6 +2822,12 @@ class _SessionCardState extends State<_SessionCard>
               s['rating'] = rating;
               s['notes'] = notes;
               s['endedAt'] = endTime;
+              _logSessionActivityToLead(
+                s['linkedLeadId'] as String? ?? '',
+                s['linkedLead'] as String,
+                'Session Completed',
+                'Session completed. Outcome: $outcome. Rating: $rating/5',
+              );
               // Mark linked reminder as completed too (interconnected logic)
               final sesId = s['id'] as String? ?? '';
               if (sesId.isNotEmpty) {
@@ -2597,7 +2873,9 @@ class _SessionCardState extends State<_SessionCard>
             final conflict = globalSessionMaps.any((m) {
               if (m['id'] == s['id']) return false;
               final mStatus = m['status'] as String;
-              if (mStatus == 'Completed' || mStatus == 'Cancelled') {
+              if (mStatus == 'Completed' ||
+                  mStatus == 'Cancelled' ||
+                  mStatus == 'Rescheduled') {
                 return false;
               }
               final mLead = m['linkedLead'] as String;
@@ -2640,7 +2918,24 @@ class _SessionCardState extends State<_SessionCard>
               );
               return;
             }
-            globalSessionMaps.removeWhere((m) => m['id'] == s['id']);
+            final isActiveSession =
+                s['status'] != 'Completed' && s['status'] != 'Cancelled';
+            final idx = globalSessionMaps.indexWhere((m) => m['id'] == s['id']);
+            if (idx >= 0) {
+              globalSessionMaps[idx]['rescheduledSessionType'] =
+                  actionData['type'] as String;
+              globalSessionMaps[idx]['rescheduledSessionDate'] =
+                  actionData['date'] as DateTime;
+              if (isActiveSession) {
+                // Mark original as Rescheduled (keep in list with tag)
+                globalSessionMaps[idx]['status'] = 'Rescheduled';
+                globalSessionMaps[idx]['rescheduleReason'] =
+                    actionData['rescheduleReason'] as String? ?? '';
+              }
+            }
+            if (!isActiveSession) {
+              globalSessionMaps.removeWhere((m) => m['id'] == s['id']);
+            }
             final newSession = {
               'id': 'ses-${DateTime.now().millisecondsSinceEpoch}',
               'title': '${actionData['type']} with $customerName',
@@ -2657,6 +2952,8 @@ class _SessionCardState extends State<_SessionCard>
               'customerPhone': s['customerPhone'] ?? '',
               'preferredContact': s['preferredContact'] ?? <String>[],
               'meetingLink': actionData['meetingLink'] as String? ?? '',
+              'videoCallMode':
+                  actionData['videoCallMode'] as String? ?? 'Inbuilt',
               'platform': actionData['type'] == 'Video Call'
                   ? 'Online'
                   : actionData['type'] == 'Appointment'
@@ -2678,8 +2975,16 @@ class _SessionCardState extends State<_SessionCard>
               'callCount': 0,
               'appointmentCount': 0,
               'isExistingCustomer': s['isExistingCustomer'] ?? false,
+              'rescheduledFromId': s['id'],
+              'interestTags': s['interestTags'] ?? <String>[],
             };
             globalSessionMaps.insert(0, newSession);
+            _logSessionActivityToLead(
+              s['linkedLeadId'] as String? ?? '',
+              customerName,
+              'Session Rescheduled',
+              'Session rescheduled to ${actionData['type']} on ${_formatFullDateTime(actionData['date'] as DateTime)}',
+            );
             widget.onUpdate();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -3011,7 +3316,7 @@ class _SessionCardState extends State<_SessionCard>
                     if ((s['agenda'] as String? ?? '').isNotEmpty)
                       _SDetailRow(
                         icon: Icons.assignment_rounded,
-                        label: 'Agenda',
+                        label: 'Title',
                         value: s['agenda'] as String,
                       ),
                     if (participants.isNotEmpty)
@@ -3033,6 +3338,45 @@ class _SessionCardState extends State<_SessionCard>
                         value: 'Available',
                       ),
                     const SizedBox(height: 16),
+                    // Interest Tags in session details
+                    if ((s['interestTags'] as List?)?.isNotEmpty == true) ...[
+                      _SDetailSection(title: 'Interest Tags'),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children:
+                            ((s['interestTags'] as List?)?.cast<String>() ?? [])
+                                .map(
+                                  (tag) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF0891B2,
+                                      ).withAlpha(15),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFF0891B2,
+                                        ).withAlpha(50),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      tag,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: const Color(0xFF0891B2),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     // Contact attempt counters
                     _SDetailSection(title: 'Contact Attempts'),
                     Wrap(
@@ -3141,10 +3485,14 @@ class _SessionCardState extends State<_SessionCard>
                       ),
                       const SizedBox(height: 16),
                     ],
-                    // Rescheduled Session — show if a reschedule was created from this session
+                    // ── Status Section ──────────────────────────────────
+                    _SDetailSection(title: 'Status'),
+                    _buildDetailsCompletionStatus(s),
+                    const SizedBox(height: 16),
+                    // ── Next Schedule (shown when rescheduled session exists) ──
                     if ((s['rescheduledSessionType'] as String? ?? '')
                         .isNotEmpty) ...[
-                      _SDetailSection(title: 'Rescheduled Session'),
+                      _SDetailSection(title: 'Next Schedule'),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -3194,10 +3542,6 @@ class _SessionCardState extends State<_SessionCard>
                       ),
                       const SizedBox(height: 16),
                     ],
-                    // ── Status Section ──────────────────────────────────
-                    _SDetailSection(title: 'Status'),
-                    _buildDetailsCompletionStatus(s),
-                    const SizedBox(height: 16),
                     // ── See Customer / See Lead Links ────────────────────
                     _SDetailSection(title: 'Quick Links'),
                     const SizedBox(height: 4),
@@ -3548,6 +3892,7 @@ class _SessionCardState extends State<_SessionCard>
     final isInProgress = s['status'] == 'In Progress';
     final isVideoCall = s['type'] == 'Video Call';
     final isCancelled = s['status'] == 'Cancelled';
+    final isRescheduled = s['status'] == 'Rescheduled';
     final startedAt = s['startedAt'] as DateTime?;
     final endedAt = s['endedAt'] as DateTime?;
     final duration = _computedDuration(startedAt, endedAt);
@@ -3560,6 +3905,15 @@ class _SessionCardState extends State<_SessionCard>
     final isExistingCustomer = s['isExistingCustomer'] == true;
     final cancelReason = s['cancelReason'] as String? ?? '';
     final isInbuilt = _isInbuiltVideoCall(s);
+
+    // For video sessions, show multiple participants
+    final participants = (s['participants'] as List?)?.cast<String>() ?? [];
+    String displayLead = s['linkedLead'] as String;
+    if (isVideoCall && participants.length > 1) {
+      final first = participants.first;
+      final others = participants.length - 1;
+      displayLead = '$first +$others other${others > 1 ? 's' : ''}';
+    }
 
     return FadeTransition(
       opacity: _fade,
@@ -3580,6 +3934,8 @@ class _SessionCardState extends State<_SessionCard>
                         ? AppTheme.error.withAlpha(80)
                         : isCancelled
                         ? AppTheme.error.withAlpha(40)
+                        : isRescheduled
+                        ? const Color(0xFF8B5CF6).withAlpha(60)
                         : AppTheme.surface200,
                     width: isInProgress ? 2 : 1,
                   ),
@@ -3688,6 +4044,56 @@ class _SessionCardState extends State<_SessionCard>
                           ],
                         ),
                       ),
+                    // Rescheduled banner
+                    if (isRescheduled)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withAlpha(15),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.event_repeat_rounded,
+                              size: 14,
+                              color: Color(0xFF8B5CF6),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Rescheduled',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF8B5CF6),
+                              ),
+                            ),
+                            if ((s['rescheduleReason'] as String? ?? '')
+                                .isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '· ${s['rescheduleReason']}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    color: const Color(
+                                      0xFF8B5CF6,
+                                    ).withAlpha(180),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     Padding(
                       padding: const EdgeInsets.all(14),
                       child: Column(
@@ -3748,7 +4154,7 @@ class _SessionCardState extends State<_SessionCard>
                                         const SizedBox(width: 3),
                                         Expanded(
                                           child: Text(
-                                            s['linkedLead'] as String,
+                                            displayLead,
                                             style: GoogleFonts.plusJakartaSans(
                                               fontSize: 11,
                                               color: AppTheme.textSecondary,
@@ -3889,42 +4295,44 @@ class _SessionCardState extends State<_SessionCard>
                               ],
                             ],
                           ),
-                          // Interest tags — only show row if tags exist (no gap when empty)
+                          // Interest tags — below type badge row
                           if (interestTags.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               child: Row(
-                                children: [
-                                  ...interestTags.map(
-                                    (tag) => Container(
-                                      margin: const EdgeInsets.only(right: 6),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 3,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(
-                                          0xFF0891B2,
-                                        ).withAlpha(15),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
+                                children: interestTags
+                                    .map(
+                                      (tag) => Container(
+                                        margin: const EdgeInsets.only(right: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
                                           color: const Color(
                                             0xFF0891B2,
-                                          ).withAlpha(50),
+                                          ).withAlpha(15),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: const Color(
+                                              0xFF0891B2,
+                                            ).withAlpha(50),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          tag,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w500,
+                                            color: const Color(0xFF0891B2),
+                                          ),
                                         ),
                                       ),
-                                      child: Text(
-                                        tag,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w500,
-                                          color: const Color(0xFF0891B2),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                    )
+                                    .toList(),
                               ),
                             ),
                           ],
@@ -4035,35 +4443,6 @@ class _SessionCardState extends State<_SessionCard>
                               ),
                             ),
                           ],
-                          // Contact attempt counters
-                          if (hasAttempts) ...[
-                            const SizedBox(height: 8),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  if (videoCallCount > 0)
-                                    _CountChip(
-                                      icon: Icons.videocam_rounded,
-                                      label: 'Video Call: $videoCallCount',
-                                      color: const Color(0xFF0891B2),
-                                    ),
-                                  if (callCount > 0)
-                                    _CountChip(
-                                      icon: Icons.phone_rounded,
-                                      label: 'Call: $callCount',
-                                      color: AppTheme.success,
-                                    ),
-                                  if (appointmentCount > 0)
-                                    _CountChip(
-                                      icon: Icons.people_rounded,
-                                      label: 'Appointment: $appointmentCount',
-                                      color: const Color(0xFF8B5CF6),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
                           if ((s['outcome'] as String? ?? '').isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
@@ -4116,7 +4495,9 @@ class _SessionCardState extends State<_SessionCard>
     Color statusColor,
   ) {
     final endedAt = s['endedAt'] as DateTime?;
+    final cancelledAt = s['cancelledAt'] as DateTime?;
     final isCompleted = s['status'] == 'Completed';
+    final isCancelled = s['status'] == 'Cancelled';
     if (isCompleted && endedAt != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -4148,7 +4529,40 @@ class _SessionCardState extends State<_SessionCard>
         ],
       );
     }
-    // For non-completed: show status badge with date/time
+    if (isCancelled) {
+      // Show actual cancelled date if available, else use current time as fallback
+      final displayDate = cancelledAt ?? DateTime.now();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: statusColor.withAlpha(25),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Cancelled',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: statusColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _formatDate(displayDate),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 9,
+              color: statusColor.withAlpha(180),
+            ),
+          ),
+        ],
+      );
+    }
+    // For non-completed, non-cancelled: show status badge with scheduled date/time
     final date = s['date'] as DateTime;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -4551,9 +4965,12 @@ class _SessionCardState extends State<_SessionCard>
                         if (idx >= 0) {
                           globalSessionMaps[idx]['status'] = 'Cancelled';
                           globalSessionMaps[idx]['cancelReason'] = reason;
+                          globalSessionMaps[idx]['cancelledAt'] =
+                              DateTime.now();
                         }
                         s['status'] = 'Cancelled';
                         s['cancelReason'] = reason;
+                        s['cancelledAt'] = DateTime.now();
                         setState(() => _actionsExpanded = false);
                         widget.onUpdate();
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -4752,23 +5169,35 @@ class _SessionCardState extends State<_SessionCard>
         (s['telegram'] as String? ?? '').isNotEmpty ||
         (leadMap['telegram'] as String? ?? '').isNotEmpty;
 
-    void logAction(String actionKey) {
+    // Determine if session is frozen (completed, cancelled, or rescheduled old)
+    final isFrozen =
+        s['status'] == 'Completed' ||
+        s['status'] == 'Cancelled' ||
+        s['status'] == 'Rescheduled';
+
+    void logAction(String actionKey, String actionLabel) {
+      if (isFrozen) return; // Don't update counts for frozen sessions
       final idx = globalSessionMaps.indexWhere((m) => m['id'] == s['id']);
       if (idx >= 0) {
         globalSessionMaps[idx][actionKey] =
             (globalSessionMaps[idx][actionKey] as int? ?? 0) + 1;
         s[actionKey] = (s[actionKey] as int? ?? 0) + 1;
-        // Track last call date for Call Back completion rule
         if (actionKey == 'callCount') {
           globalSessionMaps[idx]['lastCallDate'] = DateTime.now();
           s['lastCallDate'] = DateTime.now();
         }
       }
+      _logSessionActivityToLead(
+        s['linkedLeadId'] as String? ?? '',
+        customerName,
+        actionLabel,
+        '$actionLabel action performed for session: ${s['title']}',
+      );
       widget.onUpdate();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Action logged for $customerName'),
+            content: Text('$actionLabel logged for $customerName'),
             backgroundColor: AppTheme.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -4777,6 +5206,41 @@ class _SessionCardState extends State<_SessionCard>
           ),
         );
       }
+    }
+
+    // Show template picker for messaging actions — opens WhatsApp for WhatsApp action
+    void showTemplatePicker(
+      String actionLabel,
+      String actionKey, {
+      String? platform,
+    }) {
+      final templates = globalTemplateMaps.where((t) {
+        final cat = (t['category'] as String? ?? '').toLowerCase();
+        if (platform != null) {
+          return cat.contains(platform.toLowerCase()) ||
+              cat == 'sms' ||
+              cat == 'email';
+        }
+        return true;
+      }).toList();
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _TemplatePickerSheet(
+          actionLabel: actionLabel,
+          templates: templates,
+          customerName: customerName,
+          isWhatsApp: platform?.toLowerCase() == 'whatsapp',
+          onUseTemplate: (templateBody) {
+            logAction(actionKey, actionLabel);
+          },
+          onCustomMessage: () {
+            logAction(actionKey, actionLabel);
+          },
+        ),
+      );
     }
 
     void checkPreferenceAndLog(String action, String actionKey) {
@@ -4809,7 +5273,13 @@ class _SessionCardState extends State<_SessionCard>
               FilledButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  logAction(actionKey);
+                  if (action == 'WhatsApp Messages' ||
+                      action == 'Message' ||
+                      action == 'Email') {
+                    showTemplatePicker(action, actionKey, platform: action);
+                  } else {
+                    logAction(actionKey, action);
+                  }
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.warning,
@@ -4825,7 +5295,13 @@ class _SessionCardState extends State<_SessionCard>
           ),
         );
       } else {
-        logAction(actionKey);
+        if (action == 'WhatsApp Messages' ||
+            action == 'Message' ||
+            action == 'Email') {
+          showTemplatePicker(action, actionKey, platform: action);
+        } else {
+          logAction(actionKey, action);
+        }
       }
     }
 
@@ -4862,7 +5338,7 @@ class _SessionCardState extends State<_SessionCard>
           ),
         );
       } else {
-        logAction(actionKey);
+        showTemplatePicker(platform, actionKey, platform: platform);
       }
     }
 
@@ -4939,9 +5415,18 @@ class _SessionCardState extends State<_SessionCard>
                         if (idx >= 0) {
                           globalSessionMaps[idx]['status'] = 'Cancelled';
                           globalSessionMaps[idx]['cancelReason'] = reason;
+                          globalSessionMaps[idx]['cancelledAt'] =
+                              DateTime.now();
                         }
                         s['status'] = 'Cancelled';
                         s['cancelReason'] = reason;
+                        s['cancelledAt'] = DateTime.now();
+                        _logSessionActivityToLead(
+                          s['linkedLeadId'] as String? ?? '',
+                          customerName,
+                          'Session Cancelled',
+                          'Session cancelled. Reason: $reason',
+                        );
                         setState(() {});
                         widget.onUpdate();
                         if (context.mounted) {
@@ -4956,6 +5441,108 @@ class _SessionCardState extends State<_SessionCard>
                             ),
                           );
                         }
+                        // Ask if they want to reschedule
+                        Future.delayed(const Duration(milliseconds: 400), () {
+                          if (!context.mounted) return;
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              title: Row(
+                                children: [
+                                  Icon(
+                                    Icons.event_repeat_rounded,
+                                    color: AppTheme.primary,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Reschedule Session?',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              content: Text(
+                                'Session was cancelled.\nReason: $reason\n\nWould you like to reschedule with the same customer?',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(
+                                    'No',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                                FilledButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (_) => _RescheduleFromCancelSheet(
+                                        session: s,
+                                        cancelReason: reason,
+                                        onSave: (sessionData) {
+                                          globalSessionMaps.insert(
+                                            0,
+                                            sessionData,
+                                          );
+                                          _logSessionActivityToLead(
+                                            s['linkedLeadId'] as String? ?? '',
+                                            customerName,
+                                            'Session Rescheduled',
+                                            'Session rescheduled after cancellation for ${sessionData['type']}',
+                                          );
+                                          widget.onUpdate();
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: const Text(
+                                                  'Session rescheduled successfully!',
+                                                ),
+                                                backgroundColor:
+                                                    AppTheme.success,
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppTheme.primary,
+                                  ),
+                                  child: Text(
+                                    'Yes, Reschedule',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        });
                       },
                 style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
                 child: Text(
@@ -4973,7 +5560,6 @@ class _SessionCardState extends State<_SessionCard>
 
     void showScheduleAction() {
       Navigator.pop(context);
-      // isActiveSession = true when session is not completed/cancelled
       final isActiveSession =
           s['status'] != 'Completed' && s['status'] != 'Cancelled';
       showModalBottomSheet(
@@ -4989,7 +5575,9 @@ class _SessionCardState extends State<_SessionCard>
             final conflict = globalSessionMaps.any((m) {
               if (m['id'] == s['id']) return false;
               final mStatus = m['status'] as String;
-              if (mStatus == 'Completed' || mStatus == 'Cancelled') {
+              if (mStatus == 'Completed' ||
+                  mStatus == 'Cancelled' ||
+                  mStatus == 'Rescheduled') {
                 return false;
               }
               return m['linkedLead'] == cName ||
@@ -5030,10 +5618,18 @@ class _SessionCardState extends State<_SessionCard>
               );
               return;
             }
-            // Store reschedule info on the original session before removing
             final rescheduleReason =
                 actionData['rescheduleReason'] as String? ?? '';
             final idx = globalSessionMaps.indexWhere((m) => m['id'] == s['id']);
+
+            // Copy action counts from old session to new session
+            final oldVideoCallCount = s['videoCallCount'] as int? ?? 0;
+            final oldCallCount = s['callCount'] as int? ?? 0;
+            final oldAppointmentCount = s['appointmentCount'] as int? ?? 0;
+            final oldMessageCount = s['messageCount'] as int? ?? 0;
+            final oldWhatsappCount = s['whatsappCount'] as int? ?? 0;
+            final oldEmailCount = s['emailCount'] as int? ?? 0;
+
             if (idx >= 0) {
               globalSessionMaps[idx]['rescheduledSessionType'] =
                   actionData['type'] as String;
@@ -5042,8 +5638,13 @@ class _SessionCardState extends State<_SessionCard>
               if (rescheduleReason.isNotEmpty) {
                 globalSessionMaps[idx]['rescheduleReason'] = rescheduleReason;
               }
+              if (isActiveSession) {
+                globalSessionMaps[idx]['status'] = 'Rescheduled';
+              }
             }
-            globalSessionMaps.removeWhere((m) => m['id'] == s['id']);
+            if (!isActiveSession) {
+              globalSessionMaps.removeWhere((m) => m['id'] == s['id']);
+            }
             final newSession = {
               'id': 'ses-${DateTime.now().millisecondsSinceEpoch}',
               'title': '${actionData['type']} with $cName',
@@ -5079,13 +5680,24 @@ class _SessionCardState extends State<_SessionCard>
               'dealValue': s['dealValue'] ?? 0.0,
               'priority': s['priority'] ?? 'Medium',
               'createdAt': DateTime.now(),
-              'videoCallCount': 0,
-              'callCount': 0,
-              'appointmentCount': 0,
+              // Copy action counts from old session
+              'videoCallCount': oldVideoCallCount,
+              'callCount': oldCallCount,
+              'appointmentCount': oldAppointmentCount,
+              'messageCount': oldMessageCount,
+              'whatsappCount': oldWhatsappCount,
+              'emailCount': oldEmailCount,
               'isExistingCustomer': s['isExistingCustomer'] ?? false,
               'rescheduledFromId': s['id'],
+              'interestTags': s['interestTags'] ?? <String>[],
             };
             globalSessionMaps.insert(0, newSession);
+            _logSessionActivityToLead(
+              s['linkedLeadId'] as String? ?? '',
+              cName,
+              'Session Rescheduled',
+              'Session rescheduled to ${actionData['type']} on ${_formatFullDateTime(actionData['date'] as DateTime)}',
+            );
             widget.onUpdate();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -5104,7 +5716,6 @@ class _SessionCardState extends State<_SessionCard>
       );
     }
 
-    // Try to complete with rules check
     void tryMarkComplete() {
       final reason = _canCompleteReason(s);
       if (reason != null) {
@@ -5155,6 +5766,131 @@ class _SessionCardState extends State<_SessionCard>
       _endSession(context, s);
     }
 
+    // Build action counts display for frozen sessions
+    Widget buildFrozenActionCounts() {
+      final videoCallCount = s['videoCallCount'] as int? ?? 0;
+      final callCount = s['callCount'] as int? ?? 0;
+      final appointmentCount = s['appointmentCount'] as int? ?? 0;
+      final messageCount = s['messageCount'] as int? ?? 0;
+      final whatsappCount = s['whatsappCount'] as int? ?? 0;
+      final emailCount = s['emailCount'] as int? ?? 0;
+      final instagramCount = s['instagramCount'] as int? ?? 0;
+      final facebookCount = s['facebookCount'] as int? ?? 0;
+      final twitterCount = s['twitterCount'] as int? ?? 0;
+      final telegramCount = s['telegramCount'] as int? ?? 0;
+
+      final counts = <Widget>[];
+      if (videoCallCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.videocam_rounded,
+            label: 'Video Call: $videoCallCount',
+            color: const Color(0xFF0891B2),
+          ),
+        );
+      }
+      if (callCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.phone_rounded,
+            label: 'Call: $callCount',
+            color: AppTheme.success,
+          ),
+        );
+      }
+      if (appointmentCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.people_rounded,
+            label: 'Appointment: $appointmentCount',
+            color: const Color(0xFF8B5CF6),
+          ),
+        );
+      }
+      if (messageCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.message_rounded,
+            label: 'Message: $messageCount',
+            color: const Color(0xFF8B5CF6),
+          ),
+        );
+      }
+      if (whatsappCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.chat_rounded,
+            label: 'WhatsApp: $whatsappCount',
+            color: const Color(0xFF25D366),
+          ),
+        );
+      }
+      if (emailCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.email_rounded,
+            label: 'Email: $emailCount',
+            color: AppTheme.primary,
+          ),
+        );
+      }
+      if (instagramCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.camera_alt_rounded,
+            label: 'Instagram: $instagramCount',
+            color: const Color(0xFFE1306C),
+          ),
+        );
+      }
+      if (facebookCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.facebook_rounded,
+            label: 'Facebook: $facebookCount',
+            color: const Color(0xFF1877F2),
+          ),
+        );
+      }
+      if (twitterCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.close_rounded,
+            label: 'X: $twitterCount',
+            color: Colors.black,
+          ),
+        );
+      }
+      if (telegramCount > 0) {
+        counts.add(
+          _CountBadge(
+            icon: Icons.send_rounded,
+            label: 'Telegram: $telegramCount',
+            color: const Color(0xFF0088CC),
+          ),
+        );
+      }
+
+      if (counts.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ACTION COUNTS (FROZEN)',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textMuted,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: counts),
+          const SizedBox(height: 12),
+        ],
+      );
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -5186,7 +5922,6 @@ class _SessionCardState extends State<_SessionCard>
                 ),
                 child: Row(
                   children: [
-                    // Back button — closes sheet (goes back to list)
                     IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.arrow_back_rounded, size: 20),
@@ -5219,6 +5954,40 @@ class _SessionCardState extends State<_SessionCard>
                         ],
                       ),
                     ),
+                    if (s['status'] == 'Rescheduled')
+                      Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withAlpha(20),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF8B5CF6).withAlpha(60),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.event_repeat_rounded,
+                              size: 10,
+                              color: Color(0xFF8B5CF6),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Rescheduled',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF8B5CF6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close_rounded),
@@ -5246,8 +6015,224 @@ class _SessionCardState extends State<_SessionCard>
                       ),
                     ),
                     const SizedBox(height: 10),
+                    // For frozen sessions: show disabled actions with inline counts
+                    if (isFrozen) ...[
+                      _ActionRowDisabled(
+                        icon: Icons.phone_rounded,
+                        label: 'Call',
+                        color: AppTheme.textMuted,
+                        count: s['callCount'] as int? ?? 0,
+                      ),
+                      _ActionRowDisabled(
+                        icon: Icons.message_rounded,
+                        label: 'Message',
+                        color: AppTheme.textMuted,
+                        count: s['messageCount'] as int? ?? 0,
+                      ),
+                      _ActionRowDisabled(
+                        icon: Icons.chat_rounded,
+                        label: 'WhatsApp',
+                        color: AppTheme.textMuted,
+                        count: s['whatsappCount'] as int? ?? 0,
+                      ),
+                      _ActionRowDisabled(
+                        icon: Icons.email_rounded,
+                        label: 'Email',
+                        color: AppTheme.textMuted,
+                        count: s['emailCount'] as int? ?? 0,
+                      ),
+                      _ActionRowDisabled(
+                        icon: Icons.videocam_rounded,
+                        label: 'Video Call',
+                        color: AppTheme.textMuted,
+                        count: s['videoCallCount'] as int? ?? 0,
+                      ),
+                      _ActionRowDisabled(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Instagram',
+                        color: AppTheme.textMuted,
+                        count: s['instagramCount'] as int? ?? 0,
+                      ),
+                      _ActionRowDisabled(
+                        icon: Icons.facebook_rounded,
+                        label: 'Facebook',
+                        color: AppTheme.textMuted,
+                        count: s['facebookCount'] as int? ?? 0,
+                      ),
+                      _ActionRowDisabled(
+                        icon: Icons.close_rounded,
+                        label: 'X (Twitter)',
+                        color: AppTheme.textMuted,
+                        count: s['twitterCount'] as int? ?? 0,
+                      ),
+                      _ActionRowDisabled(
+                        icon: Icons.send_rounded,
+                        label: 'Telegram',
+                        color: AppTheme.textMuted,
+                        count: s['telegramCount'] as int? ?? 0,
+                      ),
+                      const Divider(height: 20),
+                      _ActionRowDisabled(
+                        icon: Icons.event_repeat_rounded,
+                        label: 'Reschedule Action (Disabled)',
+                        color: AppTheme.textMuted,
+                      ),
+                      const Divider(height: 20),
+                    ] else ...[
+                      // Active session actions — show inline counts
+                      _ActionRow(
+                        icon: Icons.phone_rounded,
+                        label: 'Call',
+                        color: AppTheme.success,
+                        count: s['callCount'] as int? ?? 0,
+                        onTap: () =>
+                            checkPreferenceAndLog('Calls', 'callCount'),
+                      ),
+                      _ActionRow(
+                        icon: Icons.message_rounded,
+                        label: 'Message',
+                        color: const Color(0xFF8B5CF6),
+                        count: s['messageCount'] as int? ?? 0,
+                        onTap: () => showTemplatePicker(
+                          'Message',
+                          'messageCount',
+                          platform: 'SMS',
+                        ),
+                      ),
+                      _ActionRow(
+                        icon: Icons.chat_rounded,
+                        label: 'WhatsApp',
+                        color: const Color(0xFF25D366),
+                        count: s['whatsappCount'] as int? ?? 0,
+                        onTap: () => showTemplatePicker(
+                          'WhatsApp',
+                          'whatsappCount',
+                          platform: 'WhatsApp',
+                        ),
+                      ),
+                      _ActionRow(
+                        icon: Icons.email_rounded,
+                        label: 'Email',
+                        color: AppTheme.primary,
+                        count: s['emailCount'] as int? ?? 0,
+                        onTap: () => showTemplatePicker(
+                          'Email',
+                          'emailCount',
+                          platform: 'Email',
+                        ),
+                      ),
+                      _ActionRow(
+                        icon: Icons.videocam_rounded,
+                        label: 'Video Call',
+                        color: const Color(0xFF0891B2),
+                        count: s['videoCallCount'] as int? ?? 0,
+                        onTap: () => checkPreferenceAndLog(
+                          'Video Call',
+                          'videoCallCount',
+                        ),
+                      ),
+                      _ActionRow(
+                        icon: Icons.camera_alt_rounded,
+                        label: 'Instagram',
+                        color: hasInstagram
+                            ? const Color(0xFFE1306C)
+                            : AppTheme.textMuted,
+                        count: s['instagramCount'] as int? ?? 0,
+                        onTap: () => doSocialAction(
+                          'Instagram',
+                          hasInstagram,
+                          'instagramCount',
+                        ),
+                      ),
+                      _ActionRow(
+                        icon: Icons.facebook_rounded,
+                        label: 'Facebook',
+                        color: hasFacebook
+                            ? const Color(0xFF1877F2)
+                            : AppTheme.textMuted,
+                        count: s['facebookCount'] as int? ?? 0,
+                        onTap: () => doSocialAction(
+                          'Facebook',
+                          hasFacebook,
+                          'facebookCount',
+                        ),
+                      ),
+                      _ActionRow(
+                        icon: Icons.close_rounded,
+                        label: 'X (Twitter)',
+                        color: hasTwitter
+                            ? const Color(0xFF1DA1F2)
+                            : AppTheme.textMuted,
+                        count: s['twitterCount'] as int? ?? 0,
+                        onTap: () => doSocialAction(
+                          'X (Twitter)',
+                          hasTwitter,
+                          'twitterCount',
+                        ),
+                      ),
+                      _ActionRow(
+                        icon: Icons.send_rounded,
+                        label: 'Telegram',
+                        color: hasTelegram
+                            ? const Color(0xFF0088CC)
+                            : AppTheme.textMuted,
+                        count: s['telegramCount'] as int? ?? 0,
+                        onTap: () => doSocialAction(
+                          'Telegram',
+                          hasTelegram,
+                          'telegramCount',
+                        ),
+                      ),
+                      const Divider(height: 20),
+                      // Reschedule — disabled for Rescheduled sessions
+                      if (s['status'] == 'Rescheduled')
+                        _ActionRowDisabled(
+                          icon: Icons.event_repeat_rounded,
+                          label: 'Reschedule Action (Already Rescheduled)',
+                          color: AppTheme.textMuted,
+                        )
+                      else
+                        _ActionRow(
+                          icon: Icons.event_repeat_rounded,
+                          label: 'Reschedule Action',
+                          color: const Color(0xFF8B5CF6),
+                          onTap: showScheduleAction,
+                        ),
+                      const Divider(height: 20),
+                      if (s['status'] != 'Completed' &&
+                          s['status'] != 'Cancelled' &&
+                          s['status'] != 'Rescheduled') ...[
+                        _ActionRow(
+                          icon: Icons.check_circle_rounded,
+                          label: 'Mark as Completed',
+                          color: const Color(0xFF3D9970),
+                          onTap: tryMarkComplete,
+                        ),
+                        _ActionRow(
+                          icon: Icons.cancel_outlined,
+                          label: 'Cancel Session',
+                          color: AppTheme.error,
+                          onTap: () {
+                            Navigator.pop(context);
+                            cancelSession();
+                          },
+                        ),
+                        const Divider(height: 20),
+                      ],
+                    ],
+                    _ActionRow(
+                      icon: Icons.info_outline_rounded,
+                      label: 'See Details',
+                      color: AppTheme.primary,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSessionDetailsSheet(context, s);
+                      },
+                    ),
                     // Video Call specific: Start Session (inbuilt) or Go to Video Call (only when In Progress)
-                    if (s['type'] == 'Video Call') ...[
+                    // Placed at BOTTOM of actions sheet
+                    if (s['type'] == 'Video Call' && !isFrozen) ...[
+                      const SizedBox(height: 8),
                       if (s['status'] == 'Scheduled' && _isInbuiltVideoCall(s))
                         _ActionRow(
                           icon: Icons.play_circle_rounded,
@@ -5283,127 +6268,7 @@ class _SessionCardState extends State<_SessionCard>
                             }
                           },
                         ),
-                      const SizedBox(height: 4),
                     ],
-                    // Stack actions row by row
-                    _ActionRow(
-                      icon: Icons.phone_rounded,
-                      label: 'Call',
-                      color: AppTheme.success,
-                      onTap: () => checkPreferenceAndLog('Calls', 'callCount'),
-                    ),
-                    _ActionRow(
-                      icon: Icons.message_rounded,
-                      label: 'Message',
-                      color: const Color(0xFF8B5CF6),
-                      onTap: () => logAction('messageCount'),
-                    ),
-                    _ActionRow(
-                      icon: Icons.chat_rounded,
-                      label: 'WhatsApp',
-                      color: const Color(0xFF25D366),
-                      onTap: () => logAction('whatsappCount'),
-                    ),
-                    _ActionRow(
-                      icon: Icons.email_rounded,
-                      label: 'Email',
-                      color: AppTheme.primary,
-                      onTap: () => logAction('emailCount'),
-                    ),
-                    _ActionRow(
-                      icon: Icons.videocam_rounded,
-                      label: 'Video Call',
-                      color: const Color(0xFF0891B2),
-                      onTap: () =>
-                          checkPreferenceAndLog('Video Call', 'videoCallCount'),
-                    ),
-                    _ActionRow(
-                      icon: Icons.camera_alt_rounded,
-                      label: 'Instagram',
-                      color: hasInstagram
-                          ? const Color(0xFFE1306C)
-                          : AppTheme.textMuted,
-                      onTap: () => doSocialAction(
-                        'Instagram',
-                        hasInstagram,
-                        'instagramCount',
-                      ),
-                    ),
-                    _ActionRow(
-                      icon: Icons.facebook_rounded,
-                      label: 'Facebook',
-                      color: hasFacebook
-                          ? const Color(0xFF1877F2)
-                          : AppTheme.textMuted,
-                      onTap: () => doSocialAction(
-                        'Facebook',
-                        hasFacebook,
-                        'facebookCount',
-                      ),
-                    ),
-                    _ActionRow(
-                      icon: Icons.close_rounded,
-                      label: 'X (Twitter)',
-                      color: hasTwitter
-                          ? const Color(0xFF1DA1F2)
-                          : AppTheme.textMuted,
-                      onTap: () => doSocialAction(
-                        'X (Twitter)',
-                        hasTwitter,
-                        'twitterCount',
-                      ),
-                    ),
-                    _ActionRow(
-                      icon: Icons.send_rounded,
-                      label: 'Telegram',
-                      color: hasTelegram
-                          ? const Color(0xFF0088CC)
-                          : AppTheme.textMuted,
-                      onTap: () => doSocialAction(
-                        'Telegram',
-                        hasTelegram,
-                        'telegramCount',
-                      ),
-                    ),
-                    const Divider(height: 20),
-                    // Reschedule Action — available for all sessions
-                    _ActionRow(
-                      icon: Icons.event_repeat_rounded,
-                      label: 'Reschedule Action',
-                      color: const Color(0xFF8B5CF6),
-                      onTap: showScheduleAction,
-                    ),
-                    const Divider(height: 20),
-                    // Mark Complete / Cancel — with completion rules
-                    if (s['status'] != 'Completed' &&
-                        s['status'] != 'Cancelled') ...[
-                      _ActionRow(
-                        icon: Icons.check_circle_rounded,
-                        label: 'Mark as Completed',
-                        color: const Color(0xFF3D9970),
-                        onTap: tryMarkComplete,
-                      ),
-                      _ActionRow(
-                        icon: Icons.cancel_outlined,
-                        label: 'Cancel Session',
-                        color: AppTheme.error,
-                        onTap: () {
-                          Navigator.pop(context);
-                          cancelSession();
-                        },
-                      ),
-                      const Divider(height: 20),
-                    ],
-                    // See Details
-                    _ActionRow(
-                      icon: Icons.info_outline_rounded,
-                      label: 'See Details',
-                      color: AppTheme.primary,
-                      onTap: () {
-                        Navigator.pop(context);
-                        _showSessionDetailsSheet(context, s);
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -7693,6 +8558,9 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
   final _titleCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _leadSearchCtrl = TextEditingController();
+  final _thirdPartyLinkCtrl = TextEditingController();
+  final _newLeadNameCtrl = TextEditingController();
+  final _newLeadPhoneCtrl = TextEditingController();
 
   String _selectedType = 'Video Call';
   _AgentInfo? _selectedAgent;
@@ -7703,6 +8571,14 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
   String _leadSearchQuery = '';
   bool _showLeadSearch = false;
   bool _addToReminders = true; // Default ON
+  String _videoCallMode = 'Inbuilt'; // 'Inbuilt' or '3rd Party'
+  // Multi-lead for video call
+  final List<Map<String, dynamic>> _videoCallLeads = [];
+  bool _showVideoLeadSearch = false;
+  String _videoLeadSearchQuery = '';
+  final _videoLeadSearchCtrl = TextEditingController();
+  bool _showAddNewLead = false;
+  int? _editingLeadIndex; // index being edited
 
   // Reminder fields (shown when _addToReminders is true)
   bool _hasAlarm = false;
@@ -7725,19 +8601,37 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
   static const _repeatOptions = ['None', 'Daily', 'Weekly', 'Monthly'];
   static const _notifyOptions = ['Push', 'In-App', 'WhatsApp', 'Email'];
 
-  bool get _canSave =>
-      _titleCtrl.text.trim().isNotEmpty &&
-      _selectedLead != null &&
-      _selectedAgent != null &&
-      _selectedDate != null &&
-      _selectedTime != null &&
-      (_selectedType != 'Appointment' || _locationCtrl.text.trim().isNotEmpty);
+  bool get _canSave {
+    if (_titleCtrl.text.trim().isEmpty) return false;
+    if (_selectedAgent == null) return false;
+    if (_selectedDate == null || _selectedTime == null) return false;
+    if (_selectedType == 'Appointment' && _locationCtrl.text.trim().isEmpty) {
+      return false;
+    }
+    // For video call: need at least one lead
+    if (_selectedType == 'Video Call') {
+      return _videoCallLeads.isNotEmpty;
+    }
+    return _selectedLead != null;
+  }
 
   @override
   void initState() {
     super.initState();
     // Default agent = first agent (current user)
     _selectedAgent = widget.agents.isNotEmpty ? widget.agents.first : null;
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _locationCtrl.dispose();
+    _leadSearchCtrl.dispose();
+    _thirdPartyLinkCtrl.dispose();
+    _newLeadNameCtrl.dispose();
+    _newLeadPhoneCtrl.dispose();
+    _videoLeadSearchCtrl.dispose();
+    super.dispose();
   }
 
   String _formatDate(DateTime dt) {
@@ -7767,12 +8661,13 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
     }).toList();
   }
 
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _locationCtrl.dispose();
-    _leadSearchCtrl.dispose();
-    super.dispose();
+  List<Map<String, dynamic>> get _filteredVideoLeads {
+    final q = _videoLeadSearchQuery.toLowerCase();
+    return leads_list.globalLeads.where((m) {
+      final name = (m['name'] as String? ?? '').toLowerCase();
+      final phone = (m['phone'] as String? ?? '').toLowerCase();
+      return q.isEmpty || name.contains(q) || phone.contains(q);
+    }).toList();
   }
 
   Color _typeColor(String t) {
@@ -7878,208 +8773,211 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
               ),
               const SizedBox(height: 12),
 
-              // Customer search from existing leads
-              _buildLabel('Customer *'),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: () => setState(() => _showLeadSearch = !_showLeadSearch),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _selectedLead != null
-                        ? AppTheme.primaryContainer
-                        : AppTheme.surface100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedLead != null
-                          ? AppTheme.primary.withAlpha(60)
-                          : AppTheme.surface200,
+              // Customer search from existing leads (only for non-video call types)
+              if (_selectedType != 'Video Call') ...[
+                _buildLabel('Customer *'),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () =>
+                      setState(() => _showLeadSearch = !_showLeadSearch),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.person_search_rounded,
-                        size: 16,
+                    decoration: BoxDecoration(
+                      color: _selectedLead != null
+                          ? AppTheme.primaryContainer
+                          : AppTheme.surface100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
                         color: _selectedLead != null
-                            ? AppTheme.primary
-                            : AppTheme.textMuted,
+                            ? AppTheme.primary.withAlpha(60)
+                            : AppTheme.surface200,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _selectedLead != null
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _selectedLead!['name'] as String? ?? '',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppTheme.primary,
-                                    ),
-                                  ),
-                                  if ((_selectedLead!['phone'] as String? ?? '')
-                                      .isNotEmpty)
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.person_search_rounded,
+                          size: 16,
+                          color: _selectedLead != null
+                              ? AppTheme.primary
+                              : AppTheme.textMuted,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _selectedLead != null
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      _selectedLead!['phone'] as String,
+                                      _selectedLead!['name'] as String? ?? '',
                                       style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 11,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
                                         color: AppTheme.primary,
                                       ),
                                     ),
-                                ],
-                              )
-                            : Text(
-                                'Search and select customer from leads',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  color: AppTheme.textMuted,
-                                ),
-                              ),
-                      ),
-                      Icon(
-                        _showLeadSearch
-                            ? Icons.expand_less_rounded
-                            : Icons.expand_more_rounded,
-                        size: 18,
-                        color: AppTheme.textMuted,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (_showLeadSearch) ...[
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _leadSearchCtrl,
-                  autofocus: true,
-                  onChanged: (v) => setState(() => _leadSearchQuery = v),
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: 'Search by name or phone...',
-                    prefixIcon: const Icon(Icons.search_rounded, size: 16),
-                    filled: true,
-                    fillColor: AppTheme.surface100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.surface200),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(10),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: _filteredLeads.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            'No leads found',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              color: AppTheme.textMuted,
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          padding: EdgeInsets.zero,
-                          itemCount: _filteredLeads.length,
-                          itemBuilder: (_, i) {
-                            final lead = _filteredLeads[i];
-                            final name = lead['name'] as String? ?? '';
-                            final phone = lead['phone'] as String? ?? '';
-                            return InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _selectedLead = lead;
-                                  _showLeadSearch = false;
-                                  _leadSearchQuery = '';
-                                  _leadSearchCtrl.clear();
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: AppTheme.surface200,
-                                      width: 0.5,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 16,
-                                      backgroundColor: AppTheme.primary
-                                          .withAlpha(30),
-                                      child: Text(
-                                        name.isNotEmpty ? name[0] : '?',
+                                    if ((_selectedLead!['phone'] as String? ??
+                                            '')
+                                        .isNotEmpty)
+                                      Text(
+                                        _selectedLead!['phone'] as String,
                                         style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
                                           color: AppTheme.primary,
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            name,
-                                            style: GoogleFonts.plusJakartaSans(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          if (phone.isNotEmpty)
-                                            Text(
-                                              phone,
-                                              style:
-                                                  GoogleFonts.plusJakartaSans(
-                                                    fontSize: 11,
-                                                    color:
-                                                        AppTheme.textSecondary,
-                                                  ),
-                                            ),
-                                        ],
+                                  ],
+                                )
+                              : Text(
+                                  'Search and select customer from leads',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    color: AppTheme.textMuted,
+                                  ),
+                                ),
+                        ),
+                        Icon(
+                          _showLeadSearch
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          size: 18,
+                          color: AppTheme.textMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_showLeadSearch) ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _leadSearchCtrl,
+                    autofocus: true,
+                    onChanged: (v) => setState(() => _leadSearchQuery = v),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Search by name or phone...',
+                      prefixIcon: const Icon(Icons.search_rounded, size: 16),
+                      filled: true,
+                      fillColor: AppTheme.surface100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.surface200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: _filteredLeads.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(
+                              'No leads found',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                color: AppTheme.textMuted,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            padding: EdgeInsets.zero,
+                            itemCount: _filteredLeads.length,
+                            itemBuilder: (_, i) {
+                              final lead = _filteredLeads[i];
+                              final name = lead['name'] as String? ?? '';
+                              final phone = lead['phone'] as String? ?? '';
+                              return InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedLead = lead;
+                                    _showLeadSearch = false;
+                                    _leadSearchQuery = '';
+                                    _leadSearchCtrl.clear();
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: AppTheme.surface200,
+                                        width: 0.5,
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 16,
+                                        backgroundColor: AppTheme.primary
+                                            .withAlpha(30),
+                                        child: Text(
+                                          name.isNotEmpty ? name[0] : '?',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              name,
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                            if (phone.isNotEmpty)
+                                              Text(
+                                                phone,
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      fontSize: 11,
+                                                      color: AppTheme
+                                                          .textSecondary,
+                                                    ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-              const SizedBox(height: 12),
-
+                              );
+                            },
+                          ),
+                  ),
+                ], // end if (_showLeadSearch)
+              ], // end if (_selectedType != 'Video Call') for customer
               // Session Type
               _buildLabel('Session Type *'),
               const SizedBox(height: 8),
@@ -8313,7 +9211,7 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
                 const SizedBox(height: 12),
               ],
 
-              // Video Call: auto meeting link info
+              // Video Call: inbuilt/3rd party + multi-lead
               if (_selectedType == 'Video Call') ...[
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -8324,26 +9222,582 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
                       color: const Color(0xFF0891B2).withAlpha(50),
                     ),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.link_rounded,
-                        size: 16,
-                        color: Color(0xFF0891B2),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Meeting link will be auto-generated when session is created.',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: const Color(0xFF0891B2),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.videocam_rounded,
+                            size: 16,
+                            color: Color(0xFF0891B2),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Video Call Type',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF0891B2),
+                            ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => _videoCallMode = 'Inbuilt'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _videoCallMode == 'Inbuilt'
+                                      ? const Color(0xFF0891B2)
+                                      : AppTheme.surfaceLight,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF0891B2,
+                                    ).withAlpha(80),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'Inbuilt (Auto-link)',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: _videoCallMode == 'Inbuilt'
+                                          ? Colors.white
+                                          : const Color(0xFF0891B2),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () =>
+                                  setState(() => _videoCallMode = '3rd Party'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _videoCallMode == '3rd Party'
+                                      ? const Color(0xFF0891B2)
+                                      : AppTheme.surfaceLight,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF0891B2,
+                                    ).withAlpha(80),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '3rd Party Link',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: _videoCallMode == '3rd Party'
+                                          ? Colors.white
+                                          : const Color(0xFF0891B2),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_videoCallMode == 'Inbuilt') ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.link_rounded,
+                              size: 14,
+                              color: Color(0xFF0891B2),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Meeting link will be auto-generated.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: const Color(0xFF0891B2),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (_videoCallMode == '3rd Party') ...[
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _thirdPartyLinkCtrl,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            hintText:
+                                'Paste video session link (Zoom, Teams, etc.)...',
+                            prefixIcon: const Icon(
+                              Icons.link_rounded,
+                              size: 16,
+                            ),
+                            filled: true,
+                            fillColor: AppTheme.surfaceLight,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          style: GoogleFonts.plusJakartaSans(fontSize: 12),
+                        ),
+                      ],
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                // Multi-lead for video call
+                _buildLabel('Participants (Leads) *'),
+                const SizedBox(height: 6),
+                // Show added leads
+                if (_videoCallLeads.isNotEmpty) ...[
+                  ...List.generate(_videoCallLeads.length, (i) {
+                    final lead = _videoCallLeads[i];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppTheme.primary.withAlpha(60),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: AppTheme.primary.withAlpha(30),
+                            child: Text(
+                              (lead['name'] as String? ?? '?')[0],
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  lead['name'] as String? ?? '',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                                if ((lead['phone'] as String? ?? '').isNotEmpty)
+                                  Text(
+                                    lead['phone'] as String,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 10,
+                                      color: AppTheme.primary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.edit_rounded,
+                              size: 14,
+                              color: AppTheme.primary,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _editingLeadIndex = i;
+                                _newLeadNameCtrl.text =
+                                    lead['name'] as String? ?? '';
+                                _newLeadPhoneCtrl.text =
+                                    lead['phone'] as String? ?? '';
+                                _showAddNewLead = true;
+                              });
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          const SizedBox(width: 4),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              size: 14,
+                              color: AppTheme.error,
+                            ),
+                            onPressed: () =>
+                                setState(() => _videoCallLeads.removeAt(i)),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+                // Add lead from existing leads
+                if (!_showAddNewLead) ...[
+                  GestureDetector(
+                    onTap: () => setState(
+                      () => _showVideoLeadSearch = !_showVideoLeadSearch,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface100,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.surface200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.person_add_rounded,
+                            size: 16,
+                            color: AppTheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Add existing lead',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(
+                            _showVideoLeadSearch
+                                ? Icons.expand_less_rounded
+                                : Icons.expand_more_rounded,
+                            size: 16,
+                            color: AppTheme.textMuted,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_showVideoLeadSearch) ...[
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _videoLeadSearchCtrl,
+                      autofocus: true,
+                      onChanged: (v) =>
+                          setState(() => _videoLeadSearchQuery = v),
+                      style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Search by name or phone...',
+                        prefixIcon: const Icon(Icons.search_rounded, size: 16),
+                        filled: true,
+                        fillColor: AppTheme.surface100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 160),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.surface200),
+                      ),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        itemCount: _filteredVideoLeads.length,
+                        itemBuilder: (_, i) {
+                          final lead = _filteredVideoLeads[i];
+                          final alreadyAdded = _videoCallLeads.any(
+                            (l) => l['name'] == lead['name'],
+                          );
+                          return InkWell(
+                            onTap: alreadyAdded
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _videoCallLeads.add({
+                                        'name': lead['name'],
+                                        'phone': lead['phone'] ?? '',
+                                        'id': lead['id'] ?? '',
+                                      });
+                                      _showVideoLeadSearch = false;
+                                      _videoLeadSearchQuery = '';
+                                      _videoLeadSearchCtrl.clear();
+                                    });
+                                  },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: alreadyAdded
+                                    ? AppTheme.surface100
+                                    : null,
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: AppTheme.surface200,
+                                    width: 0.5,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: AppTheme.primary.withAlpha(
+                                      30,
+                                    ),
+                                    child: Text(
+                                      (lead['name'] as String? ?? '?')[0],
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${lead['name']}${(lead['phone'] as String? ?? '').isNotEmpty ? ' · ${lead['phone']}' : ''}',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12,
+                                        color: alreadyAdded
+                                            ? AppTheme.textMuted
+                                            : AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  if (alreadyAdded)
+                                    const Icon(
+                                      Icons.check_rounded,
+                                      size: 14,
+                                      color: AppTheme.success,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _showAddNewLead = true;
+                        _editingLeadIndex = null;
+                        _newLeadNameCtrl.clear();
+                        _newLeadPhoneCtrl.clear();
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface100,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.surface200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.add_rounded,
+                            size: 16,
+                            color: AppTheme.success,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Add new lead (name + phone)',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: AppTheme.success,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                // Add new lead form
+                if (_showAddNewLead) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface100,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.surface200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _editingLeadIndex != null ? 'Edit Lead' : 'New Lead',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _newLeadNameCtrl,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            hintText: 'Name *',
+                            filled: true,
+                            fillColor: AppTheme.surfaceLight,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _newLeadPhoneCtrl,
+                          onChanged: (_) => setState(() {}),
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            hintText: 'Phone *',
+                            filled: true,
+                            fillColor: AppTheme.surfaceLight,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                          ),
+                          style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => setState(() {
+                                  _showAddNewLead = false;
+                                  _editingLeadIndex = null;
+                                  _newLeadNameCtrl.clear();
+                                  _newLeadPhoneCtrl.clear();
+                                }),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.textSecondary,
+                                  side: BorderSide(color: AppTheme.surface200),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Cancel',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed:
+                                    (_newLeadNameCtrl.text.trim().isEmpty ||
+                                        _newLeadPhoneCtrl.text.trim().isEmpty)
+                                    ? null
+                                    : () {
+                                        final newLead = {
+                                          'name': _newLeadNameCtrl.text.trim(),
+                                          'phone': _newLeadPhoneCtrl.text
+                                              .trim(),
+                                          'id': '',
+                                        };
+                                        setState(() {
+                                          if (_editingLeadIndex != null) {
+                                            _videoCallLeads[_editingLeadIndex!] =
+                                                newLead;
+                                          } else {
+                                            _videoCallLeads.add(newLead);
+                                          }
+                                          _showAddNewLead = false;
+                                          _editingLeadIndex = null;
+                                          _newLeadNameCtrl.clear();
+                                          _newLeadPhoneCtrl.clear();
+                                        });
+                                      },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppTheme.primary,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  _editingLeadIndex != null ? 'Update' : 'Add',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
               ],
 
@@ -8752,10 +10206,30 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
                             time.hour,
                             time.minute,
                           );
-                          final lead = _selectedLead!;
-                          final customerName = lead['name'] as String? ?? '';
-                          final customerId = lead['id'] as String? ?? '';
-                          // Conflict check
+
+                          // For video call: use first lead as primary, rest as participants
+                          final isVideoCall = _selectedType == 'Video Call';
+                          final String customerName;
+                          final String customerId;
+                          final String customerPhone;
+                          final List<String> participantNames;
+                          if (isVideoCall) {
+                            final firstLead = _videoCallLeads.first;
+                            customerName = firstLead['name'] as String? ?? '';
+                            customerId = firstLead['id'] as String? ?? '';
+                            customerPhone = firstLead['phone'] as String? ?? '';
+                            participantNames = _videoCallLeads
+                                .map((l) => l['name'] as String? ?? '')
+                                .toList();
+                          } else {
+                            final lead = _selectedLead!;
+                            customerName = lead['name'] as String? ?? '';
+                            customerId = lead['id'] as String? ?? '';
+                            customerPhone = lead['phone'] as String? ?? '';
+                            participantNames = [customerName];
+                          }
+
+                          // Conflict check (only for non-video or first lead)
                           final conflict = globalSessionMaps.any((m) {
                             final mStatus = m['status'] as String;
                             if (mStatus == 'Completed' ||
@@ -8819,9 +10293,23 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
                             );
                             return;
                           }
-                          final autoMeetingLink = _selectedType == 'Video Call'
-                              ? 'meet.google.com/${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}'
-                              : '';
+                          // Meeting link based on video call mode
+                          String meetingLink = '';
+                          String videoCallMode = '';
+                          if (isVideoCall) {
+                            videoCallMode = _videoCallMode;
+                            if (_videoCallMode == 'Inbuilt') {
+                              meetingLink =
+                                  'meet.google.com/${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}';
+                            } else {
+                              meetingLink = _thirdPartyLinkCtrl.text.trim();
+                            }
+                          }
+                          final lead = isVideoCall
+                              ? (_videoCallLeads.isNotEmpty
+                                    ? _videoCallLeads.first
+                                    : <String, dynamic>{})
+                              : _selectedLead!;
                           final newSession = {
                             'id':
                                 'ses-${DateTime.now().millisecondsSinceEpoch}',
@@ -8831,18 +10319,17 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
                             'date': sessionDate,
                             'host': _selectedAgent!.name,
                             'hostInitials': _selectedAgent!.initials,
-                            'participants': [customerName],
+                            'participants': participantNames,
                             'linkedLead': customerName,
                             'linkedLeadId': customerId,
-                            'customerPhone': lead['phone'] as String? ?? '',
-                            'preferredContact':
-                                (lead['preferredContact'] as List?)
-                                    ?.cast<String>() ??
-                                <String>[],
-                            'meetingLink': autoMeetingLink,
-                            'videoCallMode': _selectedType == 'Video Call'
-                                ? 'Inbuilt'
-                                : '',
+                            'customerPhone': customerPhone,
+                            'preferredContact': isVideoCall
+                                ? <String>['Video Call']
+                                : (lead['preferredContact'] as List?)
+                                          ?.cast<String>() ??
+                                      <String>[],
+                            'meetingLink': meetingLink,
+                            'videoCallMode': videoCallMode,
                             'platform': _selectedType == 'Video Call'
                                 ? 'Online'
                                 : _selectedType == 'Appointment'
@@ -8865,8 +10352,15 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
                             'videoCallCount': 0,
                             'callCount': 0,
                             'appointmentCount': 0,
-                            'isExistingCustomer':
-                                lead['isExistingCustomer'] ?? false,
+                            'isExistingCustomer': isVideoCall
+                                ? false
+                                : (lead['isExistingCustomer'] ?? false),
+                            // Store all video call leads for display
+                            'videoCallLeads': isVideoCall
+                                ? List<Map<String, dynamic>>.from(
+                                    _videoCallLeads,
+                                  )
+                                : <Map<String, dynamic>>[],
                           };
                           Navigator.pop(context);
                           // Auto-create reminder if toggle is on
@@ -8909,8 +10403,10 @@ class _NewSessionSheetState extends State<_NewSessionSheet> {
                               'notifyVia': List<String>.from(_notifyVia),
                               'linkedLead': customerName,
                               'linkedLeadId': customerId,
-                              'linkedLeadPhone': lead['phone'] as String? ?? '',
-                              'linkedLeadEmail': lead['email'] as String? ?? '',
+                              'linkedLeadPhone': customerPhone,
+                              'linkedLeadEmail': isVideoCall
+                                  ? ''
+                                  : (lead['email'] as String? ?? ''),
                               'assignedHost': _selectedAgent!.name,
                               'assignedHostInitials': _selectedAgent!.initials,
                               'snoozed': false,
@@ -9117,6 +10613,7 @@ class _SingleAgentPickerState extends State<_SingleAgentPicker> {
 class _FilterSheet extends StatefulWidget {
   final List<String> selectedHosts;
   final List<String> selectedTypes;
+  final List<String> selectedStatuses;
   final List<String> hostOptions;
   final List<String> typeOptions;
   final bool? existingCustomerFilter;
@@ -9125,6 +10622,7 @@ class _FilterSheet extends StatefulWidget {
   final void Function(
     List<String> hosts,
     List<String> types,
+    List<String> statuses,
     bool? existingCustomer,
     DateTime? from,
     DateTime? to,
@@ -9134,6 +10632,7 @@ class _FilterSheet extends StatefulWidget {
   const _FilterSheet({
     required this.selectedHosts,
     required this.selectedTypes,
+    required this.selectedStatuses,
     required this.hostOptions,
     required this.typeOptions,
     required this.existingCustomerFilter,
@@ -9149,15 +10648,25 @@ class _FilterSheet extends StatefulWidget {
 class _FilterSheetState extends State<_FilterSheet> {
   late List<String> _hosts;
   late List<String> _types;
+  late List<String> _statuses;
   bool? _existingCustomer;
   DateTime? _from;
   DateTime? _to;
+
+  static const _statusOptions = [
+    'Upcoming',
+    'Completed',
+    'Dues',
+    'Rescheduled',
+    'Cancelled',
+  ];
 
   @override
   void initState() {
     super.initState();
     _hosts = List.from(widget.selectedHosts);
     _types = List.from(widget.selectedTypes);
+    _statuses = List.from(widget.selectedStatuses);
     _existingCustomer = widget.existingCustomerFilter;
     _from = widget.dateFrom;
     _to = widget.dateTo;
@@ -9179,6 +10688,23 @@ class _FilterSheetState extends State<_FilterSheet> {
       'Dec',
     ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+  }
+
+  Color _statusColor(String st) {
+    switch (st) {
+      case 'Upcoming':
+        return AppTheme.primary;
+      case 'Completed':
+        return AppTheme.success;
+      case 'Dues':
+        return const Color(0xFFDC2626);
+      case 'Rescheduled':
+        return const Color(0xFF8B5CF6);
+      case 'Cancelled':
+        return AppTheme.error;
+      default:
+        return AppTheme.textSecondary;
+    }
   }
 
   @override
@@ -9216,6 +10742,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                   onPressed: () => setState(() {
                     _hosts.clear();
                     _types.clear();
+                    _statuses.clear();
                     _existingCustomer = null;
                     _from = null;
                     _to = null;
@@ -9242,6 +10769,57 @@ class _FilterSheetState extends State<_FilterSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Status filter
+                  Text(
+                    'Status',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _statusOptions.map((st) {
+                      final sel = _statuses.contains(st);
+                      final color = _statusColor(st);
+                      return GestureDetector(
+                        onTap: () => setState(() {
+                          if (sel) {
+                            _statuses.remove(st);
+                          } else {
+                            _statuses.add(st);
+                          }
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: sel
+                                ? color.withAlpha(25)
+                                : AppTheme.surface100,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: sel ? color : AppTheme.surface200,
+                            ),
+                          ),
+                          child: Text(
+                            st,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: sel ? color : AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
                   // Session Type
                   Text(
                     'Session Type',
@@ -9404,7 +10982,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Assigned Host — search bar + list rows (same as follow-up)
+                  // Assigned Host
                   Text(
                     'Assigned Host',
                     style: GoogleFonts.plusJakartaSans(
@@ -9541,6 +11119,7 @@ class _FilterSheetState extends State<_FilterSheet> {
                         widget.onApply(
                           _hosts,
                           _types,
+                          _statuses,
                           _existingCustomer,
                           _from,
                           _to,
@@ -10406,11 +11985,13 @@ class _ActionRow extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final int count;
   const _ActionRow({
     required this.icon,
     required this.label,
     required this.color,
     required this.onTap,
+    this.count = 0,
   });
 
   @override
@@ -10449,11 +12030,30 @@ class _ActionRow extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 16,
-              color: color.withAlpha(150),
-            ),
+            if (count > 0) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withAlpha(60)),
+                ),
+                child: Text(
+                  '$count',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
+            ] else ...[
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: color.withAlpha(150),
+              ),
+            ],
           ],
         ),
       ),
@@ -10466,10 +12066,12 @@ class _ActionRowDisabled extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final int count;
   const _ActionRowDisabled({
     required this.icon,
     required this.label,
     required this.color,
+    this.count = 0,
   });
 
   @override
@@ -10505,9 +12107,402 @@ class _ActionRowDisabled extends StatelessWidget {
               ),
             ),
           ),
-          Icon(Icons.lock_rounded, size: 14, color: color),
+          if (count > 0) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.surface200,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock_rounded, size: 10, color: AppTheme.textMuted),
+                  const SizedBox(width: 3),
+                  Text(
+                    '$count',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            Icon(Icons.lock_rounded, size: 14, color: color),
+          ],
         ],
       ),
     );
   }
 }
+
+// ─── Template Picker Sheet ────────────────────────────────────────────────────
+
+class _TemplatePickerSheet extends StatefulWidget {
+  final String actionLabel;
+  final List<Map<String, dynamic>> templates;
+  final String customerName;
+  final bool isWhatsApp;
+  final void Function(String templateBody) onUseTemplate;
+  final VoidCallback onCustomMessage;
+
+  const _TemplatePickerSheet({
+    required this.actionLabel,
+    required this.templates,
+    required this.customerName,
+    this.isWhatsApp = false,
+    required this.onUseTemplate,
+    required this.onCustomMessage,
+  });
+
+  @override
+  State<_TemplatePickerSheet> createState() => _TemplatePickerSheetState();
+}
+
+class _TemplatePickerSheetState extends State<_TemplatePickerSheet> {
+  final _customCtrl = TextEditingController();
+  bool _showCustom = false;
+
+  @override
+  void dispose() {
+    _customCtrl.dispose();
+    super.dispose();
+  }
+
+  void _openWhatsApp(String message) {
+    // Simulate opening WhatsApp
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.chat_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Opening WhatsApp for ${widget.customerName}...',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF25D366),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+    widget.onUseTemplate(message);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.surface200,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: widget.isWhatsApp
+                          ? const Color(0xFF25D366).withAlpha(20)
+                          : AppTheme.primary.withAlpha(20),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      widget.isWhatsApp
+                          ? Icons.chat_rounded
+                          : Icons.description_rounded,
+                      color: widget.isWhatsApp
+                          ? const Color(0xFF25D366)
+                          : AppTheme.primary,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.actionLabel} Templates',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          'To: ${widget.customerName}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!_showCustom) ...[
+                      if (widget.templates.isNotEmpty) ...[
+                        Text(
+                          'Saved Templates',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...widget.templates.map((t) {
+                          final color =
+                              t['color'] as Color? ?? AppTheme.primary;
+                          return GestureDetector(
+                            onTap: () {
+                              final body = (t['body'] as String? ?? '')
+                                  .replaceAll(
+                                    '@customer_name',
+                                    widget.customerName,
+                                  );
+                              if (widget.isWhatsApp) {
+                                _openWhatsApp(body);
+                              } else {
+                                Navigator.pop(context);
+                                widget.onUseTemplate(body);
+                              }
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: color.withAlpha(10),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: color.withAlpha(50)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        t['icon'] as IconData? ??
+                                            Icons.description_rounded,
+                                        size: 14,
+                                        color: color,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          t['name'] as String? ?? '',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: color,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: color.withAlpha(20),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          t['category'] as String? ?? '',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w600,
+                                            color: color,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    (t['body'] as String? ?? '').replaceAll(
+                                      '@customer_name',
+                                      widget.customerName,
+                                    ),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      color: AppTheme.textSecondary,
+                                      height: 1.4,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 8),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                      ],
+                      GestureDetector(
+                        onTap: () => setState(() => _showCustom = true),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surface100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppTheme.surface200),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.edit_rounded,
+                                size: 18,
+                                color: AppTheme.textSecondary,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Write Custom Message',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              const Spacer(),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                                color: AppTheme.textMuted,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => setState(() => _showCustom = false),
+                            child: const Icon(
+                              Icons.arrow_back_rounded,
+                              size: 20,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Custom Message',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _customCtrl,
+                        maxLines: 5,
+                        autofocus: true,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          hintText:
+                              'Type your message to ${widget.customerName}...',
+                          filled: true,
+                          fillColor: AppTheme.surface100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.all(14),
+                        ),
+                        style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: _customCtrl.text.trim().isEmpty
+                              ? null
+                              : () {
+                                  if (widget.isWhatsApp) {
+                                    _openWhatsApp(_customCtrl.text.trim());
+                                  } else {
+                                    Navigator.pop(context);
+                                    widget.onCustomMessage();
+                                  }
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: widget.isWhatsApp
+                                ? const Color(0xFF25D366)
+                                : AppTheme.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            widget.isWhatsApp
+                                ? 'Open WhatsApp'
+                                : 'Send Message',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Lead Detail Wrapper (for back navigation to session details) ─────────────
+// This is a placeholder - actual navigation uses context.push which respects back stack
