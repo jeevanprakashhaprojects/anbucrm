@@ -43,9 +43,13 @@ class AppTheme {
   // Lead Status Colors
   static const Color statusNew = Color(0xFF6366F1);
   static const Color statusContacted = Color(0xFF0EA5E9);
+  static const Color statusEngaged = Color(0xFF8B5CF6);
   static const Color statusQualified = Color(0xFF10B981);
   static const Color statusProposal = Color(0xFFF59E0B);
-  static const Color statusNegotiation = Color(0xFFF97316);
+  static const Color statusFollowUp = Color(0xFFF97316);
+  static const Color statusSessions = Color(0xFF7C3AED);
+  static const Color statusNegotiation = Color(0xFFEC4899);
+  static const Color statusResult = Color(0xFF059669);
   static const Color statusWon = Color(0xFF059669);
   static const Color statusLost = Color(0xFFDC2626);
   static const Color statusJunk = Color(0xFF94A3B8);
@@ -61,12 +65,23 @@ class AppTheme {
         return statusNew;
       case 'contacted':
         return statusContacted;
+      case 'engaged':
+        return statusEngaged;
       case 'qualified':
         return statusQualified;
+      case 'proposed':
       case 'proposal':
         return statusProposal;
+      case 'follow up':
+      case 'follow-up':
+        return statusFollowUp;
+      case 'sessions':
+        return statusSessions;
+      case 'negotiations':
       case 'negotiation':
         return statusNegotiation;
+      case 'result':
+        return statusResult;
       case 'won':
         return statusWon;
       case 'lost':

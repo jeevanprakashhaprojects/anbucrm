@@ -597,6 +597,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'route': AppRoutes.employeesScreen,
         'push': true,
       },
+      {
+        'label': 'Imp. Dates',
+        'icon': Icons.cake_rounded,
+        'color': const Color(0xFFEC4899),
+        'route': AppRoutes.importantDatesScreen,
+        'push': true,
+      },
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -680,6 +687,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'color': const Color(0xFF059669),
         'desc': 'Team & performance',
         'route': AppRoutes.employeesScreen,
+      },
+      {
+        'label': 'Important Dates',
+        'icon': Icons.cake_rounded,
+        'color': const Color(0xFFEC4899),
+        'desc': 'Birthdays & renewals',
+        'route': AppRoutes.importantDatesScreen,
+      },
+      {
+        'label': 'Assign Leads',
+        'icon': Icons.assignment_ind_rounded,
+        'color': const Color(0xFF4F46E5),
+        'desc': 'Admin: assign tasks',
+        'route': AppRoutes.assignLeadsScreen,
+      },
+      {
+        'label': 'Assigned Tasks',
+        'icon': Icons.task_alt_rounded,
+        'color': const Color(0xFF059669),
+        'desc': 'My assigned work',
+        'route': AppRoutes.assignedTasksScreen,
       },
     ];
     return Column(

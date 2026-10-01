@@ -23,12 +23,15 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
   final List<Map<String, dynamic>> _voiceRecordings = [];
   final _noteController = TextEditingController();
   final _noteFocusNode = FocusNode();
+  // Track selected pipeline stage for interactive selector
+  String _selectedPipelineStage = '';
 
   @override
   void initState() {
     super.initState();
     _lead = widget.lead;
     _tabController = TabController(length: 3, vsync: this);
+    _selectedPipelineStage = _lead.status;
   }
 
   @override
@@ -88,6 +91,19 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     }
     return '${(diff.inDays / 365).floor()} years ago · $dateStr';
   }
+
+  // ─── New pipeline stages ───────────────────────────────────────────────────
+  static const _kPipelineStages = [
+    'New',
+    'Contacted',
+    'Engaged',
+    'Qualified',
+    'Proposed',
+    'Follow Up',
+    'Sessions',
+    'Negotiations',
+    'Result',
+  ];
 
   // Show bottom sheet with all interest details when user taps an interest
   void _showInterestDetails(String interestName) {
@@ -399,11 +415,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                 children: [
                   _HeaderBadge(label: _lead.status, color: _statusColor),
                   _HeaderBadge(label: _lead.priority, color: _priorityColor),
-                  if (_lead.dealValue > 0)
-                    _HeaderBadge(
-                      label: _formatValue(_lead.dealValue),
-                      color: Colors.white.withAlpha(100),
-                    ),
                 ],
               ),
             ),
@@ -426,6 +437,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
           _buildAddressCard(),
           _buildSocialCard(),
           _buildInterestsCard(),
+          // Interest-specific Notes
+          _buildInterestNotesCard(),
           // Tags
           if (_lead.tags.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -464,18 +477,270 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
           ],
           // Relations
           _buildRelationsCard(),
-          // Activity Timeline (Sessions + Follow-ups linked to this lead)
-          _buildActivityTimelineCard(),
-          // Pipeline stage
+          // Pipeline stage — interactive horizontal scroll
           const SizedBox(height: 16),
-          _InfoCard(
-            title: 'Pipeline Stage',
-            icon: Icons.account_tree_outlined,
-            children: [_PipelineProgress(currentStatus: _lead.status)],
-          ),
+          _buildInteractivePipelineCard(),
           const SizedBox(height: 80),
         ],
       ),
+    );
+  }
+
+  /// Build interactive pipeline stage card with horizontal scroll
+  Widget _buildInteractivePipelineCard() {
+    const stages = [
+      'New',
+      'Contacted',
+      'Engaged',
+      'Qualified',
+      'Proposed',
+      'Follow Up',
+      'Sessions',
+      'Negotiations',
+      'Result',
+    ];
+    final currentIndex = stages.indexOf(_selectedPipelineStage);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.surface200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withAlpha(20),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.account_tree_outlined,
+                    color: AppTheme.primary,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Pipeline Stage',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: AppTheme.surface200),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Progress bars
+                  Row(
+                    children: List.generate(stages.length, (i) {
+                      final stage = stages[i];
+                      final isPast = i < currentIndex;
+                      final isCurrent = i == currentIndex;
+                      final color = AppTheme.leadStatusColor(stage);
+                      return Container(
+                        width: 52,
+                        height: 7,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        decoration: BoxDecoration(
+                          color: isPast || isCurrent
+                              ? color
+                              : AppTheme.surface200,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 8),
+                  // Labels — tappable
+                  Row(
+                    children: List.generate(stages.length, (i) {
+                      final stage = stages[i];
+                      final isActive = _selectedPipelineStage == stage;
+                      final isPast = i < currentIndex;
+                      final color = AppTheme.leadStatusColor(stage);
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedPipelineStage = stage;
+                            _lead = LeadModel(
+                              id: _lead.id,
+                              name: _lead.name,
+                              phone: _lead.phone,
+                              email: _lead.email,
+                              company: _lead.company,
+                              industry: _lead.industry,
+                              status: stage,
+                              priority: _lead.priority,
+                              score: _lead.score,
+                              dealValue: _lead.dealValue,
+                              ownerInitials: _lead.ownerInitials,
+                              ownerName: _lead.ownerName,
+                              lastContact: _lead.lastContact,
+                              tags: _lead.tags,
+                              interests: _lead.interests,
+                              createdAt: _lead.createdAt,
+                              source: _lead.source,
+                              campaign: _lead.campaign,
+                              address: _lead.address,
+                              city: _lead.city,
+                              state: _lead.state,
+                              country: _lead.country,
+                              whatsapp: _lead.whatsapp,
+                            );
+                            // Update global map
+                            final idx = globalLeadMaps.indexWhere(
+                              (m) => m['id'] == _lead.id,
+                            );
+                            if (idx >= 0) {
+                              globalLeadMaps[idx]['status'] = stage;
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 56,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 4,
+                          ),
+                          decoration: isActive
+                              ? BoxDecoration(
+                                  color: color.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: color.withAlpha(120),
+                                    width: 1.5,
+                                  ),
+                                )
+                              : null,
+                          child: Text(
+                            stage,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 9,
+                              fontWeight: isActive
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                              color: isActive
+                                  ? color
+                                  : isPast
+                                  ? AppTheme.textSecondary
+                                  : AppTheme.textMuted,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build notes card showing only notes for each interest
+  Widget _buildInterestNotesCard() {
+    final map = _fullMap;
+    final interests = map['interests'] as List?;
+    if (interests == null || interests.isEmpty) return const SizedBox.shrink();
+
+    // Collect interests that have notes
+    final interestNotes = <Map<String, dynamic>>[];
+    for (final i in interests) {
+      final interestName = i.toString();
+      final noteKey = 'interest_notes_$interestName';
+      final note = map[noteKey] as String?;
+      if (note != null && note.trim().isNotEmpty) {
+        interestNotes.add({'interest': interestName, 'note': note.trim()});
+      }
+    }
+
+    if (interestNotes.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+        _InfoCard(
+          title: 'Interest Notes',
+          icon: Icons.sticky_note_2_outlined,
+          children: interestNotes.map<Widget>((item) {
+            final itemMap = item;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.warning.withAlpha(10),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.warning.withAlpha(40)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.warning.withAlpha(25),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          itemMap['interest'] as String,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.warning,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    itemMap['note'] as String,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -1094,13 +1359,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
 
     addRow('Status', _lead.status, Icons.flag_outlined);
     addRow('Priority', _lead.priority, Icons.priority_high_rounded);
-    if (_lead.dealValue > 0) {
-      addRow(
-        'Deal Value',
-        _formatValue(_lead.dealValue),
-        Icons.currency_rupee_rounded,
-      );
-    }
     addRow('Owner', _lead.ownerName, Icons.person_pin_outlined);
     addRow(
       'Source',
@@ -2053,137 +2311,753 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
   }
 
   void _showScheduleDialog() {
-    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
-    TimeOfDay selectedTime = const TimeOfDay(hour: 10, minute: 0);
-    String selectedType = 'Follow-up';
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
+    _showScheduleSheet(context);
+  }
+
+  void _showScheduleSheet(BuildContext context) {
+    // Check if there's already an active schedule for this lead
+    final map = _fullMap;
+    final existingAction = map['scheduledAction'] as String?;
+    final existingDate = map['scheduledActionDate'] as String?;
+    final hasActiveSchedule =
+        existingAction != null &&
+        existingAction.isNotEmpty &&
+        existingDate != null &&
+        existingDate.isNotEmpty;
+
+    if (hasActiveSchedule) {
+      // Show warning dialog first
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Text(
-            'Schedule Follow-up',
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          title: Row(
             children: [
-              Text(
-                'Type',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.warning.withAlpha(25),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppTheme.warning,
+                  size: 20,
                 ),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: ['Follow-up', 'Appointment', 'Video Call', 'Callback']
-                    .map(
-                      (t) => ChoiceChip(
-                        label: Text(
-                          t,
-                          style: GoogleFonts.plusJakartaSans(fontSize: 12),
-                        ),
-                        selected: selectedType == t,
-                        onSelected: (_) =>
-                            setDialogState(() => selectedType = t),
-                        selectedColor: AppTheme.primaryContainer,
-                        checkmarkColor: AppTheme.primary,
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final d = await showDatePicker(
-                      context: ctx,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (d != null) setDialogState(() => selectedDate = d);
-                  },
-                  icon: const Icon(Icons.calendar_today_rounded, size: 16),
-                  label: Text(
-                    '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 13),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final t = await showTimePicker(
-                      context: ctx,
-                      initialTime: selectedTime,
-                    );
-                    if (t != null) setDialogState(() => selectedTime = t);
-                  },
-                  icon: const Icon(Icons.access_time_rounded, size: 16),
-                  label: Text(
-                    selectedTime.format(ctx),
-                    style: GoogleFonts.plusJakartaSans(fontSize: 13),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Schedule Exists',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
                   ),
                 ),
               ),
             ],
           ),
+          content: Text(
+            '$existingAction already scheduled for ${_lead.name}. Do you want to change the schedule?',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel', style: GoogleFonts.plusJakartaSans()),
+              child: Text(
+                'Keep Existing',
+                style: GoogleFonts.plusJakartaSans(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                _showSnackBar(
-                  '$selectedType scheduled for ${selectedDate.day}/${selectedDate.month}/${selectedDate.year} at ${selectedTime.format(context)}',
-                );
+                _openScheduleBottomSheet(context);
               },
               style: FilledButton.styleFrom(backgroundColor: AppTheme.primary),
-              child: Text('Schedule', style: GoogleFonts.plusJakartaSans()),
+              child: Text(
+                'Change Schedule',
+                style: GoogleFonts.plusJakartaSans(),
+              ),
             ),
           ],
         ),
+      );
+    } else {
+      _openScheduleBottomSheet(context);
+    }
+  }
+
+  void _openScheduleBottomSheet(BuildContext context) {
+    String selectedActionType = 'Appointment';
+    String selectedAgent = _lead.ownerName.isNotEmpty
+        ? _lead.ownerName
+        : 'Priya Sharma';
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay? selectedTime;
+    String locationController = '';
+    String meetingLink = '';
+    String agentSearchQuery = '';
+    bool isActive = true;
+
+    final agents = [
+      {
+        'name': 'Priya Sharma',
+        'initials': 'PS',
+        'role': 'Admin',
+        'color': const Color(0xFF7C3AED),
+      },
+      {
+        'name': 'Rahul Singh',
+        'initials': 'RS',
+        'role': 'Senior Rep',
+        'color': const Color(0xFF059669),
+      },
+      {
+        'name': 'Ananya Patel',
+        'initials': 'AP',
+        'role': 'Manager',
+        'color': const Color(0xFF059669),
+      },
+      {
+        'name': 'Kavya Menon',
+        'initials': 'KM',
+        'role': 'Sales Rep',
+        'color': const Color(0xFF059669),
+      },
+      {
+        'name': 'Arjun Das',
+        'initials': 'AD',
+        'role': 'Sales Rep',
+        'color': const Color(0xFF059669),
+      },
+    ];
+
+    final locationCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          // Sort agents: selected first
+          final sortedAgents = [...agents];
+          sortedAgents.sort((a, b) {
+            if (a['name'] == selectedAgent) return -1;
+            if (b['name'] == selectedAgent) return 1;
+            return 0;
+          });
+          final filteredAgents = agentSearchQuery.isEmpty
+              ? sortedAgents
+              : sortedAgents
+                    .where(
+                      (a) =>
+                          (a['name'] as String).toLowerCase().contains(
+                            agentSearchQuery.toLowerCase(),
+                          ) ||
+                          (a['role'] as String).toLowerCase().contains(
+                            agentSearchQuery.toLowerCase(),
+                          ),
+                    )
+                    .toList();
+
+          return Container(
+            decoration: const BoxDecoration(
+              color: Color(0xFFEEEEFF),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.9,
+              maxChildSize: 0.95,
+              builder: (_, ctrl) => ListView(
+                controller: ctrl,
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withAlpha(80),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withAlpha(25),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.refresh_rounded,
+                          color: AppTheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Schedule Next Action',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                      const Spacer(),
+                      Switch(
+                        value: isActive,
+                        onChanged: (v) => setSheet(() => isActive = v),
+                        activeThumbColor: AppTheme.primary,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Action Type
+                  Text(
+                    'Action Type',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      _ActionTypeChip(
+                        label: 'Appointment',
+                        icon: Icons.people_rounded,
+                        isSelected: selectedActionType == 'Appointment',
+                        onTap: () => setSheet(() {
+                          selectedActionType = 'Appointment';
+                          meetingLink = '';
+                        }),
+                      ),
+                      _ActionTypeChip(
+                        label: 'Video Call',
+                        icon: Icons.videocam_rounded,
+                        isSelected: selectedActionType == 'Video Call',
+                        onTap: () => setSheet(() {
+                          selectedActionType = 'Video Call';
+                          meetingLink =
+                              'https://meet.google.com/${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}';
+                        }),
+                      ),
+                      _ActionTypeChip(
+                        label: 'Call Back',
+                        icon: Icons.phone_callback_rounded,
+                        isSelected: selectedActionType == 'Call Back',
+                        onTap: () => setSheet(() {
+                          selectedActionType = 'Call Back';
+                          meetingLink = '';
+                        }),
+                      ),
+                      _ActionTypeChip(
+                        label: 'Follow Up',
+                        icon: Icons.repeat_rounded,
+                        isSelected: selectedActionType == 'Follow Up',
+                        onTap: () => setSheet(() {
+                          selectedActionType = 'Follow Up';
+                          meetingLink = '';
+                        }),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Assign Member
+                  Text(
+                    'Assign Member',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Search agents
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search agents...',
+                        hintStyle: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: AppTheme.textMuted,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          size: 18,
+                          color: AppTheme.textMuted,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        isDense: true,
+                      ),
+                      style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                      onChanged: (v) => setSheet(() => agentSearchQuery = v),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...filteredAgents.map((agent) {
+                    final isSelected = selectedAgent == agent['name'];
+                    return InkWell(
+                      onTap: () => setSheet(
+                        () => selectedAgent = agent['name'] as String,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 8,
+                        ),
+                        decoration: isSelected
+                            ? BoxDecoration(
+                                color: AppTheme.primary.withAlpha(20),
+                                borderRadius: BorderRadius.circular(12),
+                              )
+                            : null,
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: (agent['color'] as Color)
+                                  .withAlpha(40),
+                              child: Text(
+                                agent['initials'] as String,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: agent['color'] as Color,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    agent['name'] as String,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    agent['role'] as String,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check_rounded,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 20),
+
+                  // Date & Time
+                  Text(
+                    'Date & Time',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            final d = await showDatePicker(
+                              context: ctx,
+                              initialDate: selectedDate,
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
+                            );
+                            if (d != null) setSheet(() => selectedDate = d);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 16,
+                                  color: AppTheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${selectedDate.day} ${_monthName(selectedDate.month)} ${selectedDate.year}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () async {
+                            final t = await showTimePicker(
+                              context: ctx,
+                              initialTime:
+                                  selectedTime ??
+                                  const TimeOfDay(hour: 10, minute: 0),
+                            );
+                            if (t != null) setSheet(() => selectedTime = t);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: selectedTime == null
+                                  ? Border.all(
+                                      color: AppTheme.error.withAlpha(80),
+                                    )
+                                  : null,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 16,
+                                  color: selectedTime == null
+                                      ? AppTheme.textMuted
+                                      : AppTheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  selectedTime == null
+                                      ? 'Select time'
+                                      : selectedTime!.format(ctx),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: selectedTime == null
+                                        ? AppTheme.textMuted
+                                        : AppTheme.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Appointment Location (only for Appointment)
+                  if (selectedActionType == 'Appointment') ...[
+                    Row(
+                      children: [
+                        Text(
+                          'Appointment Location',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          ' *',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: locationController.isEmpty
+                            ? Border.all(color: AppTheme.error.withAlpha(60))
+                            : null,
+                      ),
+                      child: TextField(
+                        controller: locationCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Office address...',
+                          hintStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            color: AppTheme.textMuted,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          isDense: true,
+                        ),
+                        style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                        onChanged: (v) =>
+                            setSheet(() => locationController = v),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Video Call auto-link
+                  if (selectedActionType == 'Video Call') ...[
+                    Text(
+                      'Meeting Link',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withAlpha(15),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppTheme.primary.withAlpha(60),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.link_rounded,
+                            size: 16,
+                            color: AppTheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              meetingLink,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primary.withAlpha(25),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Auto',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Save button
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () {
+                        // Validate compulsory fields
+                        if (selectedTime == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Please select a time',
+                                style: GoogleFonts.plusJakartaSans(),
+                              ),
+                              backgroundColor: AppTheme.error,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        if (selectedActionType == 'Appointment' &&
+                            locationController.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Please enter appointment location',
+                                style: GoogleFonts.plusJakartaSans(),
+                              ),
+                              backgroundColor: AppTheme.error,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        // Save schedule
+                        final timeStr =
+                            '${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}';
+                        final dateStr =
+                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}';
+                        setState(() {
+                          final idx = globalLeadMaps.indexWhere(
+                            (m) => m['id'] == _lead.id,
+                          );
+                          if (idx >= 0) {
+                            globalLeadMaps[idx]['scheduledAction'] =
+                                selectedActionType;
+                            globalLeadMaps[idx]['scheduledActionDate'] =
+                                dateStr;
+                            globalLeadMaps[idx]['scheduledActionTime'] =
+                                timeStr;
+                            globalLeadMaps[idx]['scheduledAssignedTo'] =
+                                selectedAgent;
+                            if (selectedActionType == 'Appointment') {
+                              globalLeadMaps[idx]['scheduledLocation'] =
+                                  locationController;
+                            }
+                            if (selectedActionType == 'Video Call') {
+                              globalLeadMaps[idx]['scheduledMeetingLink'] =
+                                  meetingLink;
+                            }
+                          }
+                        });
+                        Navigator.pop(ctx);
+                        _showSnackBar(
+                          '$selectedActionType scheduled for ${selectedDate.day}/${selectedDate.month}/${selectedDate.year} at ${selectedTime!.format(context)}',
+                        );
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        'Save Schedule',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[month - 1];
   }
 
   void _showChangeStatusDialog() {
     const statuses = [
       'New',
       'Contacted',
-      'Proposed',
+      'Engaged',
       'Qualified',
+      'Proposed',
+      'Follow Up',
+      'Sessions',
       'Negotiations',
       'Result',
-      'Won',
-      'Lost',
     ];
     showDialog(
       context: context,
@@ -2479,6 +3353,59 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
   }
 }
 
+// ─── Action Type Chip ─────────────────────────────────────────────────────────
+
+class _ActionTypeChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+  const _ActionTypeChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primary.withAlpha(20) : Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : AppTheme.surface200,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Helper Widgets ───────────────────────────────────────────────────────────
 
 class _SmallBadge extends StatelessWidget {
@@ -2638,23 +3565,27 @@ class _PipelineProgress extends StatelessWidget {
     const stages = [
       'New',
       'Contacted',
-      'Proposed',
+      'Engaged',
       'Qualified',
+      'Proposed',
+      'Follow Up',
+      'Sessions',
       'Negotiations',
       'Result',
     ];
     final currentIndex = stages.indexOf(currentStatus);
-    return Row(
-      children: stages.asMap().entries.map((entry) {
-        final i = entry.key;
-        final stage = entry.value;
-        final isPast = i < currentIndex;
-        final isCurrent = i == currentIndex;
-        final color = AppTheme.leadStatusColor(stage);
-        return Expanded(
-          child: Column(
-            children: [
-              Container(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: stages.asMap().entries.map((entry) {
+            final i = entry.key;
+            final stage = entry.value;
+            final isPast = i < currentIndex;
+            final isCurrent = i == currentIndex;
+            final color = AppTheme.leadStatusColor(stage);
+            return Expanded(
+              child: Container(
                 height: 6,
                 margin: const EdgeInsets.symmetric(horizontal: 1),
                 decoration: BoxDecoration(
@@ -2662,21 +3593,39 @@ class _PipelineProgress extends StatelessWidget {
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: stages.asMap().entries.map((entry) {
+            final i = entry.key;
+            final stage = entry.value;
+            final isCurrent = i == currentIndex;
+            final color = AppTheme.leadStatusColor(stage);
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isCurrent ? color.withAlpha(25) : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: isCurrent
+                    ? Border.all(color: color.withAlpha(80))
+                    : null,
+              ),
+              child: Text(
                 stage,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 8,
                   fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
                   color: isCurrent ? color : AppTheme.textMuted,
                 ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }

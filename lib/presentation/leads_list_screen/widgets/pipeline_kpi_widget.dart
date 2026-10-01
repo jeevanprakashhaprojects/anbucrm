@@ -11,23 +11,10 @@ class PipelineKpiWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalLeads = leads.length;
     final newLeads = leads.where((l) => l.status == 'New').length;
-    // Sessions: total unique interactions (simulated as contacted + qualified + negotiation)
-    final sessions = leads
-        .where(
-          (l) => [
-            'Contacted',
-            'Qualified',
-            'Negotiations',
-            'Proposal',
-          ].contains(l.status),
-        )
-        .length;
-    // Results: Won leads
-    final results = leads
-        .where((l) => l.status == 'Won' || l.status == 'Result')
-        .length;
-    // Follow-up leads: Contacted status
-    final followUpLeads = leads.where((l) => l.status == 'Contacted').length;
+    final sessions = leads.where((l) => l.status == 'Sessions').length;
+    final results = leads.where((l) => l.status == 'Result').length;
+    final followUpLeads = leads.where((l) => l.status == 'Follow Up').length;
+    final negotiations = leads.where((l) => l.status == 'Negotiations').length;
 
     final kpis = [
       _KpiData(
@@ -49,7 +36,7 @@ class PipelineKpiWidget extends StatelessWidget {
       _KpiData(
         label: 'Sessions',
         value: '$sessions',
-        icon: Icons.timeline_rounded,
+        icon: Icons.calendar_month_rounded,
         color: const Color(0xFF8B5CF6),
         trend: '+8%',
         trendUp: true,
@@ -63,12 +50,20 @@ class PipelineKpiWidget extends StatelessWidget {
         trendUp: true,
       ),
       _KpiData(
-        label: 'Follow-up',
+        label: 'Follow Up',
         value: '$followUpLeads',
-        icon: Icons.schedule_rounded,
+        icon: Icons.repeat_rounded,
         color: AppTheme.warning,
         trend: '$followUpLeads due',
         trendUp: false,
+      ),
+      _KpiData(
+        label: 'Negotiations',
+        value: '$negotiations',
+        icon: Icons.handshake_rounded,
+        color: const Color(0xFF0891B2),
+        trend: '$negotiations active',
+        trendUp: true,
       ),
     ];
 

@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_theme.dart';
 import '../../routes/app_routes.dart';
 import '../leads_list_screen/leads_list_screen.dart' as leads_list;
+import '../reminders_screen/reminders_screen.dart' show globalReminderMaps;
+import '../sessions_screen/sessions_screen.dart' show globalSessionMaps;
 
 // ─── Agent Data ───────────────────────────────────────────────────────────────
 
@@ -112,8 +114,12 @@ final List<Map<String, dynamic>> globalFollowUpMaps = [
     'callsDone': 0,
     'messagesDone': 0,
     'whatsappDone': 0,
-    'emailDone': 0,
+    'emailDone': 2,
     'videoDone': 0,
+    'instagramDone': 0,
+    'facebookDone': 0,
+    'twitterDone': 0,
+    'telegramDone': 0,
     'upcomingFollowUps': ['Monthly check-in', 'Renewal reminder'],
   },
   {
@@ -148,6 +154,7 @@ final List<Map<String, dynamic>> globalFollowUpMaps = [
     'videoDone': 0,
     'upcomingFollowUps': ['Weekly check-in'],
   },
+  // Overdue — 3 hours ago
   {
     'id': 'fu-003',
     'title': 'Monthly check-in — Vikram Singh',
@@ -180,6 +187,7 @@ final List<Map<String, dynamic>> globalFollowUpMaps = [
     'videoDone': 0,
     'upcomingFollowUps': ['Monthly check-in next cycle'],
   },
+  // Completed — yesterday
   {
     'id': 'fu-004',
     'title': 'WhatsApp — Policy renewal reminder Anita Desai',
@@ -212,13 +220,14 @@ final List<Map<String, dynamic>> globalFollowUpMaps = [
     'videoDone': 0,
     'upcomingFollowUps': ['Yearly renewal reminder'],
   },
+  // Upcoming — tomorrow (about 20h to go)
   {
     'id': 'fu-005',
     'title': 'Send SIP calculator to Karan Joshi',
     'type': 'Email',
     'status': 'Upcoming',
     'priority': 'Medium',
-    'dueDate': DateTime.now().add(const Duration(days: 1)),
+    'dueDate': DateTime.now().add(const Duration(hours: 20)),
     'assignedAgent': 'Kavya Menon',
     'agentInitials': 'KM',
     'linkedLead': 'Karan Joshi',
@@ -244,6 +253,7 @@ final List<Map<String, dynamic>> globalFollowUpMaps = [
     'videoDone': 0,
     'upcomingFollowUps': ['Daily SIP update', 'Tax planning session'],
   },
+  // Upcoming — 3 days
   {
     'id': 'fu-006',
     'title': 'Draft Key Man policy terms — Al-Rashid',
@@ -276,6 +286,7 @@ final List<Map<String, dynamic>> globalFollowUpMaps = [
     'videoDone': 1,
     'upcomingFollowUps': ['Contract review', 'Legal sign-off'],
   },
+  // Overdue — 2 days ago
   {
     'id': 'fu-007',
     'title': 'Reschedule call — Deepa Nair',
@@ -308,6 +319,7 @@ final List<Map<String, dynamic>> globalFollowUpMaps = [
     'videoDone': 0,
     'upcomingFollowUps': [],
   },
+  // Upcoming — 4 days
   {
     'id': 'fu-008',
     'title': 'Weekly pipeline review — all leads',
@@ -339,6 +351,137 @@ final List<Map<String, dynamic>> globalFollowUpMaps = [
     'emailDone': 0,
     'videoDone': 0,
     'upcomingFollowUps': ['Next weekly review'],
+  },
+  // Upcoming — 4 hours to go
+  {
+    'id': 'fu-009',
+    'title': 'Video call with Pradeep Kumar — SIP review',
+    'type': 'Video Call',
+    'status': 'Upcoming',
+    'priority': 'High',
+    'dueDate': DateTime.now().add(const Duration(hours: 4)),
+    'assignedAgent': 'Arjun Das',
+    'agentInitials': 'AD',
+    'linkedLead': 'Pradeep Kumar',
+    'linkedLeadId': '',
+    'customerPhone': '+91 70987 65432',
+    'notes':
+        'SIP investment planning and portfolio review. Client wants to start ₹25K/month SIP.',
+    'outcome': '',
+    'isRecurring': false,
+    'recurringFrequency': 'Custom',
+    'isOverdue': false,
+    'completedAt': null,
+    'createdAt': DateTime.now().subtract(const Duration(days: 1)),
+    'tags': ['SIP', 'Mutual Funds'],
+    'preferredContact': ['Video Call'],
+    'contactMethod': 'Video Call',
+    'reminderBefore': '30 minutes',
+    'isExistingCustomer': false,
+    'callsDone': 0,
+    'messagesDone': 0,
+    'whatsappDone': 0,
+    'emailDone': 0,
+    'videoDone': 0,
+    'upcomingFollowUps': [],
+  },
+  // Completed — 2 days ago
+  {
+    'id': 'fu-010',
+    'title': 'Term plan proposal — Arjun Mehta',
+    'type': 'Calls',
+    'status': 'Completed',
+    'priority': 'High',
+    'dueDate': DateTime.now().subtract(const Duration(days: 2, hours: 3)),
+    'assignedAgent': 'Kavya Menon',
+    'agentInitials': 'KM',
+    'linkedLead': 'Arjun Mehta',
+    'linkedLeadId': '',
+    'customerPhone': '+91 91234 56789',
+    'notes': 'Discussed term plan options. Client interested in ₹50L cover.',
+    'outcome': 'Client agreed to proceed. Sent proposal document.',
+    'isRecurring': false,
+    'recurringFrequency': 'Custom',
+    'isOverdue': false,
+    'completedAt': DateTime.now().subtract(const Duration(days: 2)),
+    'createdAt': DateTime.now().subtract(const Duration(days: 4)),
+    'tags': ['Term Insurance'],
+    'preferredContact': ['Calls'],
+    'contactMethod': 'Calls',
+    'reminderBefore': '1 hour',
+    'isExistingCustomer': true,
+    'callsDone': 3,
+    'messagesDone': 0,
+    'whatsappDone': 1,
+    'emailDone': 1,
+    'videoDone': 0,
+    'upcomingFollowUps': [],
+  },
+  // Overdue — 5 hours ago
+  {
+    'id': 'fu-011',
+    'title': 'WhatsApp follow-up — Sunita Rao health floater',
+    'type': 'WhatsApp Messages',
+    'status': 'Overdue',
+    'priority': 'Medium',
+    'dueDate': DateTime.now().subtract(const Duration(hours: 5)),
+    'assignedAgent': 'Ananya Patel',
+    'agentInitials': 'AP',
+    'linkedLead': 'Sunita Rao',
+    'linkedLeadId': '',
+    'customerPhone': '+91 80123 45678',
+    'notes':
+        'Send health floater plan details for family of 5. Include premium comparison.',
+    'outcome': '',
+    'isRecurring': false,
+    'recurringFrequency': 'Custom',
+    'isOverdue': true,
+    'completedAt': null,
+    'createdAt': DateTime.now().subtract(const Duration(days: 3)),
+    'tags': ['Health Cover'],
+    'preferredContact': ['WhatsApp Messages'],
+    'contactMethod': 'WhatsApp Messages',
+    'reminderBefore': '30 minutes',
+    'isExistingCustomer': true,
+    'callsDone': 0,
+    'messagesDone': 0,
+    'whatsappDone': 0,
+    'emailDone': 0,
+    'videoDone': 0,
+    'upcomingFollowUps': [],
+  },
+  // Upcoming — 7 days
+  {
+    'id': 'fu-012',
+    'title': 'Email — Retirement corpus plan for Deepa Krishnan',
+    'type': 'Email',
+    'status': 'Upcoming',
+    'priority': 'Low',
+    'dueDate': DateTime.now().add(const Duration(days: 7)),
+    'assignedAgent': 'Rahul Singh',
+    'agentInitials': 'RS',
+    'linkedLead': 'Deepa Krishnan',
+    'linkedLeadId': 'default-7',
+    'customerPhone': '+91 54321 09876',
+    'notes':
+        'Send retirement corpus planning document. Target corpus ₹2Cr by age 60.',
+    'outcome': '',
+    'isRecurring': true,
+    'recurringFrequency': 'Monthly',
+    'isOverdue': false,
+    'completedAt': null,
+    'createdAt': DateTime.now().subtract(const Duration(days: 2)),
+    'tags': ['Retirement Planning'],
+    'preferredContact': ['Email'],
+    'contactMethod': 'Email',
+    'reminderBefore': '1 day',
+    'isExistingCustomer': false,
+    'callsDone': 0,
+    'messagesDone': 0,
+    'whatsappDone': 0,
+    'emailDone': 0,
+    'videoDone': 0,
+    'upcomingFollowUps': ['Monthly retirement review'],
   },
 ];
 
@@ -444,6 +587,96 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
     return dt.year == now.year && dt.month == now.month && dt.day == now.day;
   }
 
+  // Round filter chips (same as sessions)
+  String _selectedStatusFilter = 'All';
+  static const _statusFilterOptions = [
+    'All',
+    'Today',
+    'Overdue',
+    'Upcoming',
+    'Completed',
+    'Cancelled',
+  ];
+
+  Widget _buildStatusFilterBar() {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        itemCount: _statusFilterOptions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final f = _statusFilterOptions[i];
+          final selected = _selectedStatusFilter == f;
+          // Count for each filter
+          int count = 0;
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          switch (f) {
+            case 'All':
+              count = _followUps.length;
+              break;
+            case 'Today':
+              count = _followUps
+                  .where(
+                    (fu) =>
+                        _isToday(fu['dueDate'] as DateTime) &&
+                        fu['status'] != 'Completed',
+                  )
+                  .length;
+              break;
+            case 'Overdue':
+              count = _followUps
+                  .where(
+                    (fu) =>
+                        fu['isOverdue'] == true || fu['status'] == 'Overdue',
+                  )
+                  .length;
+              break;
+            case 'Upcoming':
+              count = _followUps
+                  .where((fu) => fu['status'] == 'Upcoming')
+                  .length;
+              break;
+            case 'Completed':
+              count = _followUps
+                  .where((fu) => fu['status'] == 'Completed')
+                  .length;
+              break;
+            case 'Cancelled':
+              count = _followUps
+                  .where((fu) => fu['status'] == 'Cancelled')
+                  .length;
+              break;
+          }
+          return GestureDetector(
+            onTap: () => setState(() => _selectedStatusFilter = f),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: selected ? AppTheme.warning : AppTheme.surfaceLight,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected ? AppTheme.warning : AppTheme.surface200,
+                ),
+              ),
+              child: Text(
+                '$f ($count)',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: selected ? Colors.white : AppTheme.textSecondary,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   List<Map<String, dynamic>> get _filteredFollowUps {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -451,15 +684,28 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
       final status = f['status'] as String;
       final dueDate = f['dueDate'] as DateTime;
 
-      // Default: show only today's follow-ups + overdue (not completed/upcoming unless filtered)
-      if (!_hasActiveFilters) {
-        if (status == 'Completed') return false;
-        if (status == 'Upcoming') return false;
-        if (status == 'Cancelled') return false;
-        // Show today's pending + overdue
-        final isToday = _isToday(dueDate);
-        final isOverdue = f['isOverdue'] == true || status == 'Overdue';
-        return isToday || isOverdue;
+      // Apply round status filter first
+      if (_selectedStatusFilter != 'All') {
+        switch (_selectedStatusFilter) {
+          case 'Today':
+            if (!(_isToday(dueDate) && status != 'Completed')) return false;
+            break;
+          case 'Overdue':
+            if (!(f['isOverdue'] == true || status == 'Overdue')) return false;
+            break;
+          case 'Upcoming':
+            if (status != 'Upcoming') return false;
+            break;
+          case 'Completed':
+            if (status != 'Completed') return false;
+            break;
+          case 'Cancelled':
+            if (status != 'Cancelled') return false;
+            break;
+        }
+      } else {
+        // Default: show today first, then all others
+        // Show all statuses in All view
       }
 
       // With status filters active: apply status logic
@@ -474,18 +720,21 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
         bool matchesStatus = false;
         if (_showCompleted && status == 'Completed') matchesStatus = true;
         if (_showUpcoming && status == 'Upcoming') matchesStatus = true;
-        if (_showOverdue && (f['isOverdue'] == true || status == 'Overdue'))
+        if (_showOverdue && (f['isOverdue'] == true || status == 'Overdue')) {
           matchesStatus = true;
+        }
         if (_showCancelled && status == 'Cancelled') matchesStatus = true;
         if (_showDues) {
           final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
           if (dueDay.isBefore(today) &&
               status != 'Completed' &&
-              status != 'Cancelled')
+              status != 'Cancelled') {
             matchesStatus = true;
+          }
         }
-        if (_showToday && _isToday(dueDate) && status != 'Completed')
+        if (_showToday && _isToday(dueDate) && status != 'Completed') {
           matchesStatus = true;
+        }
         if (!matchesStatus) return false;
       }
 
@@ -536,63 +785,25 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
     }).toList();
 
     // Sort: today first (time asc), then overdue desc, then rest
-    if (!_hasActiveFilters) {
-      result.sort((a, b) {
-        final aDate = a['dueDate'] as DateTime;
-        final bDate = b['dueDate'] as DateTime;
-        final aIsToday = _isToday(aDate);
-        final bIsToday = _isToday(bDate);
-        final aIsOverdue = a['isOverdue'] == true || a['status'] == 'Overdue';
-        final bIsOverdue = b['isOverdue'] == true || b['status'] == 'Overdue';
+    result.sort((a, b) {
+      final aDate = a['dueDate'] as DateTime;
+      final bDate = b['dueDate'] as DateTime;
+      final aIsToday = _isToday(aDate);
+      final bIsToday = _isToday(bDate);
+      final aIsOverdue = a['isOverdue'] == true || a['status'] == 'Overdue';
+      final bIsOverdue = b['isOverdue'] == true || b['status'] == 'Overdue';
 
-        // Today first (time ascending)
-        if (aIsToday && !bIsToday) return -1;
-        if (!aIsToday && bIsToday) return 1;
-        if (aIsToday && bIsToday) return aDate.compareTo(bDate); // time asc
+      // Today first (time ascending)
+      if (aIsToday && !bIsToday) return -1;
+      if (!aIsToday && bIsToday) return 1;
+      if (aIsToday && bIsToday) return aDate.compareTo(bDate); // time asc
 
-        // Both overdue: sort desc (most recently overdue first)
-        if (aIsOverdue && bIsOverdue) return bDate.compareTo(aDate);
+      // Both overdue: sort desc (most recently overdue first)
+      if (aIsOverdue && bIsOverdue) return bDate.compareTo(aDate);
 
-        return aDate.compareTo(bDate);
-      });
-    } else {
-      switch (_sortOption) {
-        case _FollowUpSortOption.dueDateSoonest:
-          result.sort(
-            (a, b) =>
-                (a['dueDate'] as DateTime).compareTo(b['dueDate'] as DateTime),
-          );
-          break;
-        case _FollowUpSortOption.dueDateLatest:
-          result.sort(
-            (a, b) =>
-                (b['dueDate'] as DateTime).compareTo(a['dueDate'] as DateTime),
-          );
-          break;
-        case _FollowUpSortOption.priorityHigh:
-          const order = {'High': 0, 'Medium': 1, 'Low': 2};
-          result.sort(
-            (a, b) => (order[a['priority']] ?? 1).compareTo(
-              order[b['priority']] ?? 1,
-            ),
-          );
-          break;
-        case _FollowUpSortOption.createdNewest:
-          result.sort(
-            (a, b) => (b['createdAt'] as DateTime).compareTo(
-              a['createdAt'] as DateTime,
-            ),
-          );
-          break;
-        case _FollowUpSortOption.leadAZ:
-          result.sort(
-            (a, b) => (a['linkedLead'] as String).compareTo(
-              b['linkedLead'] as String,
-            ),
-          );
-          break;
-      }
-    }
+      return aDate.compareTo(bDate);
+    });
+
     return result;
   }
 
@@ -717,6 +928,7 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
             _buildHeader(filtered.length),
             if (_isSearchActive) _buildSearchBar(),
             _buildKpiRow(),
+            _buildStatusFilterBar(),
             if (_hasActiveFilters) _buildActiveFilterChips(),
             if (_hasActiveFilters) _buildFilteredCountBanner(filtered.length),
             Expanded(
@@ -846,8 +1058,9 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
                     color: AppTheme.textPrimary,
                   ),
                 ),
+                // X/Total format
                 Text(
-                  '$filteredCount shown',
+                  '$filteredCount/$_totalCount shown',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     color: AppTheme.textSecondary,
@@ -1153,15 +1366,65 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
     return '$dateStr · $timeStr';
   }
 
+  String _statusLabel(Map<String, dynamic> f) {
+    final status = f['status'] as String? ?? '';
+    final dueDate = f['dueDate'] as DateTime;
+    final now = DateTime.now();
+
+    if (status == 'Completed') return 'Completed';
+
+    // Determine Due vs Upcoming based on date
+    if (dueDate.isBefore(now)) {
+      return 'Due'; // Past date, no action taken
+    } else {
+      return 'Upcoming'; // Future date
+    }
+  }
+
   Widget _buildSectionedList(List<Map<String, dynamic>> filtered) {
-    // Build sections: group by date label
+    // Build sections: group by DATE only (not time), items sorted asc by time within each date
     final List<dynamic> items = []; // String = header, Map = card
-    String? lastLabel;
+    String? lastDateKey;
     for (final f in filtered) {
-      final label = _sectionLabel(f);
-      if (label != lastLabel) {
-        items.add(label);
-        lastLabel = label;
+      final dueDate = f['dueDate'] as DateTime;
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final due = DateTime(dueDate.year, dueDate.month, dueDate.day);
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      final dateStr =
+          '${dueDate.day} ${months[dueDate.month - 1]} ${dueDate.year}';
+
+      // Date-only key for grouping
+      String dateKey;
+      if (due == today) {
+        dateKey = 'Today';
+      } else if (due.isBefore(today)) {
+        final diff = today.difference(due).inDays;
+        dateKey = diff == 1
+            ? 'Yesterday · $dateStr'
+            : '${diff}d Overdue · $dateStr';
+      } else if (due == today.add(const Duration(days: 1))) {
+        dateKey = 'Tomorrow · $dateStr';
+      } else {
+        dateKey = dateStr;
+      }
+
+      if (dateKey != lastDateKey) {
+        items.add(dateKey);
+        lastDateKey = dateKey;
       }
       items.add(f);
     }
@@ -1270,6 +1533,72 @@ class _FollowUpsScreenState extends State<FollowUpsScreen> {
       builder: (_) => _NewFollowUpSheet(
         agents: _kAgents,
         onSave: (followUpData) {
+          // Check: max 1 active follow-up per customer
+          final customerName = followUpData['linkedLead'] as String? ?? '';
+          final customerId = followUpData['linkedLeadId'] as String? ?? '';
+          if (customerName.isNotEmpty) {
+            final conflict = globalFollowUpMaps.any((m) {
+              final mStatus = m['status'] as String? ?? '';
+              if (mStatus == 'Completed' || mStatus == 'Cancelled') {
+                return false;
+              }
+              final mLead = m['linkedLead'] as String? ?? '';
+              final mLeadId = m['linkedLeadId'] as String? ?? '';
+              return (mLead == customerName) ||
+                  (customerId.isNotEmpty && mLeadId == customerId);
+            });
+            if (conflict) {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppTheme.warning,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Active Follow-up Exists',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: Text(
+                    '$customerName already has an active follow-up. A customer cannot have more than 1 active follow-up at a time. Please complete or cancel the existing follow-up first.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                  actions: [
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                      ),
+                      child: Text(
+                        'OK',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
+          }
           globalFollowUpMaps.insert(0, followUpData);
           setState(() {
             _followUps = List.from(globalFollowUpMaps);
@@ -1347,6 +1676,7 @@ class _FollowUpCardState extends State<_FollowUpCard>
   late AnimationController _ctrl;
   late Animation<double> _fade;
   late Animation<Offset> _slide;
+  bool _actionsExpanded = false;
 
   @override
   void initState() {
@@ -1378,12 +1708,15 @@ class _FollowUpCardState extends State<_FollowUpCard>
     switch (s) {
       case 'Completed':
         return AppTheme.success;
+      case 'Due':
+        return AppTheme.error;
+      case 'Upcoming':
+        return const Color(0xFF0891B2);
+      // Legacy support
       case 'Pending':
         return AppTheme.primary;
       case 'Overdue':
         return AppTheme.error;
-      case 'Upcoming':
-        return const Color(0xFF0891B2);
       default:
         return AppTheme.textMuted;
     }
@@ -1426,36 +1759,49 @@ class _FollowUpCardState extends State<_FollowUpCard>
   String _formatDue(DateTime dt) {
     final now = DateTime.now();
     final diff = dt.difference(now);
+    final status = widget.followUp['status'] as String? ?? '';
+    if (status == 'Completed') {
+      final completedAt = widget.followUp['completedAt'] as DateTime?;
+      if (completedAt != null) {
+        const months = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ];
+        final h = completedAt.hour > 12
+            ? completedAt.hour - 12
+            : (completedAt.hour == 0 ? 12 : completedAt.hour);
+        final ampm = completedAt.hour >= 12 ? 'PM' : 'AM';
+        return 'Done ${completedAt.day} ${months[completedAt.month - 1]}, $h:${completedAt.minute.toString().padLeft(2, '0')} $ampm';
+      }
+      return 'Completed';
+    }
     if (diff.isNegative) {
       final abs = diff.abs();
-      if (abs.inMinutes < 60) return '${abs.inMinutes}m overdue';
-      if (abs.inHours < 24) return '${abs.inHours}h overdue';
-      // Show actual date+time for overdue
-      const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      final h = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-      final ampm = dt.hour >= 12 ? 'PM' : 'AM';
-      return 'Overdue · ${dt.day} ${months[dt.month - 1]} $h:${dt.minute.toString().padLeft(2, '0')} $ampm';
+      if (abs.inMinutes < 60) return 'Due · ${abs.inMinutes}m ago';
+      if (abs.inHours < 24) return 'Due · ${abs.inHours}h ago';
+      if (abs.inDays == 1) return 'Due · Yesterday';
+      if (abs.inDays < 365) return 'Overdue · ${abs.inDays}d';
+      return 'Overdue · ${(abs.inDays / 365).floor()}y ${abs.inDays % 365}d';
     }
-    if (diff.inMinutes < 60) return 'In ${diff.inMinutes}m';
-    if (diff.inHours < 24) return 'In ${diff.inHours}h';
+    if (diff.inMinutes < 60) return 'Due in ${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h to go';
     if (diff.inDays == 1) return 'Tomorrow';
-    return 'In ${diff.inDays} days';
+    if (diff.inDays < 30) return 'In ${diff.inDays}d';
+    if (diff.inDays < 365) return 'In ${(diff.inDays / 30).floor()}mo';
+    return 'In ${(diff.inDays / 365).floor()}y';
   }
 
-  String _formatCreatedAt(DateTime dt) {
+  String _formatDueDateTime(DateTime dt) {
     const months = [
       'Jan',
       'Feb',
@@ -1470,7 +1816,471 @@ class _FollowUpCardState extends State<_FollowUpCard>
       'Nov',
       'Dec',
     ];
-    return 'Created ${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    final h = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}, $h:${dt.minute.toString().padLeft(2, '0')} $ampm';
+  }
+
+  void _showActionsBottomSheet(BuildContext context, Map<String, dynamic> f) {
+    final preferred = (f['preferredContact'] as List?)?.cast<String>() ?? [];
+    final customerName = f['linkedLead'] as String;
+    final leadMap = leads_list.globalLeads.firstWhere(
+      (m) => m['id'] == f['linkedLeadId'] || m['name'] == customerName,
+      orElse: () => {},
+    );
+    final hasInstagram = (leadMap['instagram'] as String? ?? '').isNotEmpty;
+    final hasFacebook = (leadMap['facebook'] as String? ?? '').isNotEmpty;
+    final hasTwitter = (leadMap['twitter'] as String? ?? '').isNotEmpty;
+    final hasTelegram = (leadMap['telegram'] as String? ?? '').isNotEmpty;
+
+    void doAction(String action, String actionKey) {
+      bool isPreferred = preferred.isEmpty || preferred.contains(action);
+      if (!isPreferred) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Not Preferred',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              '$action is not preferred for $customerName. Proceed anyway?',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
+                  });
+                  widget.onUpdate();
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.warning,
+                ),
+                child: Text(
+                  'Proceed',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        setState(() {
+          f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
+        });
+        widget.onUpdate();
+      }
+    }
+
+    void doSocialAction(String platform, bool hasData, String actionKey) {
+      if (!hasData) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'No Data Found',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'No $platform data found for $customerName.',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                ),
+                child: Text(
+                  'OK',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        setState(() {
+          f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
+        });
+        widget.onUpdate();
+      }
+    }
+
+    void cancelFollowUp() {
+      final reasonCtrl = TextEditingController();
+      showDialog(
+        context: context,
+        builder: (_) => StatefulBuilder(
+          builder: (ctx, setS) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.cancel_rounded, color: AppTheme.error, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  'Cancel Follow-up',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Please provide a reason for cancellation:',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: reasonCtrl,
+                  maxLines: 3,
+                  onChanged: (_) => setS(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Customer not interested...',
+                    filled: true,
+                    fillColor: AppTheme.surface100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  'Back',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+              FilledButton(
+                onPressed: reasonCtrl.text.trim().isEmpty
+                    ? null
+                    : () {
+                        Navigator.pop(ctx);
+                        final reason = reasonCtrl.text.trim();
+                        final idx = globalFollowUpMaps.indexWhere(
+                          (m) => m['id'] == f['id'],
+                        );
+                        if (idx >= 0) {
+                          globalFollowUpMaps[idx]['status'] = 'Cancelled';
+                          globalFollowUpMaps[idx]['cancelReason'] = reason;
+                        }
+                        setState(() {
+                          f['status'] = 'Cancelled';
+                          f['cancelReason'] = reason;
+                        });
+                        widget.onUpdate();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Follow-up cancelled'),
+                            backgroundColor: AppTheme.error,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      },
+                style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+                child: Text(
+                  'Cancel Follow-up',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.55,
+        maxChildSize: 0.85,
+        builder: (_, ctrl) => Container(
+          decoration: const BoxDecoration(
+            color: AppTheme.surfaceLight,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface200,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 4,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        customerName,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded),
+                      iconSize: 20,
+                      color: AppTheme.textSecondary,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  controller: ctrl,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  children: [
+                    Text(
+                      'Actions',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _ActionBtn(
+                          icon: Icons.phone_rounded,
+                          label: 'Call',
+                          color: AppTheme.success,
+                          onTap: () => doAction('Calls', 'callsDone'),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.message_rounded,
+                          label: 'Message',
+                          color: const Color(0xFF8B5CF6),
+                          onTap: () => doAction('Messages', 'messagesDone'),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.chat_rounded,
+                          label: 'WhatsApp',
+                          color: const Color(0xFF25D366),
+                          onTap: () =>
+                              doAction('WhatsApp Messages', 'whatsappDone'),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.email_rounded,
+                          label: 'Email',
+                          color: AppTheme.primary,
+                          onTap: () => doAction('Email', 'emailDone'),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.videocam_rounded,
+                          label: 'Video Call',
+                          color: const Color(0xFF0891B2),
+                          onTap: () => doAction('Video Call', 'videoDone'),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.camera_alt_rounded,
+                          label: 'Instagram',
+                          color: hasInstagram
+                              ? const Color(0xFFE1306C)
+                              : AppTheme.textMuted,
+                          onTap: () => doSocialAction(
+                            'Instagram',
+                            hasInstagram,
+                            'instagramDone',
+                          ),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.facebook_rounded,
+                          label: 'Facebook',
+                          color: hasFacebook
+                              ? const Color(0xFF1877F2)
+                              : AppTheme.textMuted,
+                          onTap: () => doSocialAction(
+                            'Facebook',
+                            hasFacebook,
+                            'facebookDone',
+                          ),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.close_rounded,
+                          label: 'X (Twitter)',
+                          color: hasTwitter
+                              ? const Color(0xFF000000)
+                              : AppTheme.textMuted,
+                          onTap: () => doSocialAction(
+                            'X (Twitter)',
+                            hasTwitter,
+                            'twitterDone',
+                          ),
+                        ),
+                        _ActionBtn(
+                          icon: Icons.send_rounded,
+                          label: 'Telegram',
+                          color: hasTelegram
+                              ? const Color(0xFF0088CC)
+                              : AppTheme.textMuted,
+                          onTap: () => doSocialAction(
+                            'Telegram',
+                            hasTelegram,
+                            'telegramDone',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    if (f['status'] != 'Completed' &&
+                        f['status'] != 'Cancelled') ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _markComplete(context);
+                          },
+                          icon: const Icon(
+                            Icons.check_circle_rounded,
+                            size: 16,
+                          ),
+                          label: Text(
+                            'Mark Complete',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.success,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            cancelFollowUp();
+                          },
+                          icon: const Icon(Icons.cancel_outlined, size: 16),
+                          label: Text(
+                            'Cancel Follow-up',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.error,
+                            side: BorderSide(color: AppTheme.error),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    const Divider(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showDetailsSheet(context);
+                        },
+                        icon: Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: AppTheme.primary,
+                        ),
+                        label: Text(
+                          'See Details',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showThreeDots(BuildContext context) {
@@ -1479,7 +2289,7 @@ class _FollowUpCardState extends State<_FollowUpCard>
     final customerName = f['linkedLead'] as String;
 
     // Get lead data to check social/contact fields
-    final leadMap = leads_list.globalLeadMaps.firstWhere(
+    final leadMap = leads_list.globalLeads.firstWhere(
       (m) => m['id'] == f['linkedLeadId'] || m['name'] == customerName,
       orElse: () => {},
     );
@@ -1591,8 +2401,18 @@ class _FollowUpCardState extends State<_FollowUpCard>
           ),
         );
       } else {
+        // Each platform gets its own counter
+        final actionKey = platform == 'X (Twitter)'
+            ? 'twitterDone'
+            : platform == 'Instagram'
+            ? 'instagramDone'
+            : platform == 'Facebook'
+            ? 'facebookDone'
+            : platform == 'Telegram'
+            ? 'telegramDone'
+            : 'messagesDone';
         setState(() {
-          f['messagesDone'] = (f['messagesDone'] as int? ?? 0) + 1;
+          f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
         });
         widget.onUpdate();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1778,7 +2598,7 @@ class _FollowUpCardState extends State<_FollowUpCard>
                       TextButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          final leadMap = leads_list.globalLeadMaps.firstWhere(
+                          final leadMap = leads_list.globalLeads.firstWhere(
                             (m) => m['id'] == f['linkedLeadId'],
                             orElse: () => {},
                           );
@@ -1849,18 +2669,19 @@ class _FollowUpCardState extends State<_FollowUpCard>
                     ),
                     _DetailRow(
                       icon: Icons.schedule_rounded,
-                      label: 'Due',
-                      value: _formatDue(f['dueDate'] as DateTime),
+                      label: 'Due Date',
+                      value: _formatDueDateTime(f['dueDate'] as DateTime),
                     ),
+                    if (f['createdAt'] != null)
+                      _DetailRow(
+                        icon: Icons.calendar_today_rounded,
+                        label: 'Created',
+                        value: _formatDueDateTime(f['createdAt'] as DateTime),
+                      ),
                     _DetailRow(
                       icon: Icons.autorenew_rounded,
                       label: 'Frequency',
                       value: f['recurringFrequency'] as String,
-                    ),
-                    _DetailRow(
-                      icon: Icons.contact_phone_rounded,
-                      label: 'Type',
-                      value: f['type'] as String,
                     ),
                     if (preferred.isNotEmpty)
                       _DetailRow(
@@ -1880,6 +2701,10 @@ class _FollowUpCardState extends State<_FollowUpCard>
                         label: 'Outcome',
                         value: f['outcome'] as String,
                       ),
+                    const SizedBox(height: 12),
+                    // Status tags (Completed On Time / Completed Late / status)
+                    _SectionHeader(title: 'Status'),
+                    _buildStatusTags(f),
                     const SizedBox(height: 12),
                     // Interest tags
                     if (tags.isNotEmpty) ...[
@@ -1912,38 +2737,155 @@ class _FollowUpCardState extends State<_FollowUpCard>
                       ),
                       const SizedBox(height: 12),
                     ],
-                    // Upcoming follow-ups
-                    if (upcoming.isNotEmpty) ...[
-                      _SectionHeader(title: 'Upcoming Follow-ups'),
-                      ...upcoming.map(
-                        (u) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.arrow_right_rounded,
-                                size: 18,
-                                color: AppTheme.warning,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  u,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
                     // Contact counts
                     _SectionHeader(title: 'Contact Activity'),
                     _buildContactCounts(f),
+                    const SizedBox(height: 16),
+                    // ── Actions ──────────────────────────────────────────────
+                    _SectionHeader(title: 'Actions'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _ActionBtn(
+                          icon: Icons.phone_rounded,
+                          label: 'Call',
+                          color: AppTheme.success,
+                          onTap: () {
+                            setState(() {
+                              f['callsDone'] =
+                                  (f['callsDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                        _ActionBtn(
+                          icon: Icons.message_rounded,
+                          label: 'Message',
+                          color: const Color(0xFF8B5CF6),
+                          onTap: () {
+                            setState(() {
+                              f['messagesDone'] =
+                                  (f['messagesDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                        _ActionBtn(
+                          icon: Icons.chat_rounded,
+                          label: 'WhatsApp',
+                          color: const Color(0xFF25D366),
+                          onTap: () {
+                            setState(() {
+                              f['whatsappDone'] =
+                                  (f['whatsappDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                        _ActionBtn(
+                          icon: Icons.email_rounded,
+                          label: 'Email',
+                          color: AppTheme.primary,
+                          onTap: () {
+                            setState(() {
+                              f['emailDone'] =
+                                  (f['emailDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                        _ActionBtn(
+                          icon: Icons.videocam_rounded,
+                          label: 'Video Call',
+                          color: const Color(0xFF0891B2),
+                          onTap: () {
+                            setState(() {
+                              f['videoDone'] =
+                                  (f['videoDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                        _ActionBtn(
+                          icon: Icons.camera_alt_rounded,
+                          label: 'Instagram',
+                          color: const Color(0xFFE1306C),
+                          onTap: () {
+                            setState(() {
+                              f['instagramDone'] =
+                                  (f['instagramDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                        _ActionBtn(
+                          icon: Icons.facebook_rounded,
+                          label: 'Facebook',
+                          color: const Color(0xFF1877F2),
+                          onTap: () {
+                            setState(() {
+                              f['facebookDone'] =
+                                  (f['facebookDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                        _ActionBtn(
+                          icon: Icons.close_rounded,
+                          label: 'X (Twitter)',
+                          color: const Color(0xFF000000),
+                          onTap: () {
+                            setState(() {
+                              f['twitterDone'] =
+                                  (f['twitterDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                        _ActionBtn(
+                          icon: Icons.send_rounded,
+                          label: 'Telegram',
+                          color: const Color(0xFF0088CC),
+                          onTap: () {
+                            setState(() {
+                              f['telegramDone'] =
+                                  (f['telegramDone'] as int? ?? 0) + 1;
+                            });
+                            widget.onUpdate();
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (f['status'] != 'Completed')
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _markComplete(context);
+                          },
+                          icon: const Icon(
+                            Icons.check_circle_rounded,
+                            size: 16,
+                          ),
+                          label: Text(
+                            'Mark Complete',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.success,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1952,6 +2894,151 @@ class _FollowUpCardState extends State<_FollowUpCard>
         ),
       ),
     );
+  }
+
+  Widget _buildStatusTags(Map<String, dynamic> f) {
+    final status = f['status'] as String? ?? '';
+    final dueDate = f['dueDate'] as DateTime;
+    final completedAt = f['completedAt'] as DateTime?;
+    final now = DateTime.now();
+
+    final List<Widget> tags = [];
+
+    if (status == 'Completed' && completedAt != null) {
+      // Check if completed on time or late
+      final isOnTime =
+          completedAt.isBefore(dueDate) ||
+          completedAt.isAtSameMomentAs(dueDate);
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      final h = completedAt.hour > 12
+          ? completedAt.hour - 12
+          : (completedAt.hour == 0 ? 12 : completedAt.hour);
+      final ampm = completedAt.hour >= 12 ? 'PM' : 'AM';
+      final completedStr =
+          '${completedAt.day} ${months[completedAt.month - 1]} ${completedAt.year}, $h:${completedAt.minute.toString().padLeft(2, '0')} $ampm';
+
+      tags.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: isOnTime
+                ? AppTheme.success.withAlpha(20)
+                : AppTheme.warning.withAlpha(20),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isOnTime
+                  ? AppTheme.success.withAlpha(60)
+                  : AppTheme.warning.withAlpha(60),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isOnTime ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                size: 13,
+                color: isOnTime ? AppTheme.success : AppTheme.warning,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                isOnTime ? 'Completed on time' : 'Completed after due time',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isOnTime ? AppTheme.success : AppTheme.warning,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      tags.add(const SizedBox(height: 6));
+      tags.add(
+        Text(
+          completedStr,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      );
+    } else if (status == 'Overdue' ||
+        (dueDate.isBefore(now) && status != 'Completed')) {
+      final diff = now.difference(dueDate);
+      final overdueStr = diff.inDays > 0
+          ? '${diff.inDays}d overdue'
+          : '${diff.inHours}h overdue';
+      tags.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: AppTheme.error.withAlpha(20),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppTheme.error.withAlpha(60)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_rounded, size: 13, color: AppTheme.error),
+              const SizedBox(width: 5),
+              Text(
+                'Due — $overdueStr',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.error,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      tags.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0891B2).withAlpha(20),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFF0891B2).withAlpha(60)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.schedule_rounded,
+                size: 13,
+                color: Color(0xFF0891B2),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                'Upcoming',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0891B2),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: tags);
   }
 
   Widget _buildContactCounts(Map<String, dynamic> f) {
@@ -1986,11 +3073,45 @@ class _FollowUpCardState extends State<_FollowUpCard>
         const Color(0xFF0891B2),
         f['videoDone'] as int? ?? 0,
       ),
+      (
+        'Instagram',
+        Icons.camera_alt_rounded,
+        const Color(0xFFE1306C),
+        f['instagramDone'] as int? ?? 0,
+      ),
+      (
+        'Facebook',
+        Icons.facebook_rounded,
+        const Color(0xFF1877F2),
+        f['facebookDone'] as int? ?? 0,
+      ),
+      (
+        'X (Twitter)',
+        Icons.close_rounded,
+        const Color(0xFF000000),
+        f['twitterDone'] as int? ?? 0,
+      ),
+      (
+        'Telegram',
+        Icons.send_rounded,
+        const Color(0xFF0088CC),
+        f['telegramDone'] as int? ?? 0,
+      ),
     ];
+    final nonZero = items.where((item) => item.$4 > 0).toList();
+    if (nonZero.isEmpty) {
+      return Text(
+        'No contact activity yet',
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 12,
+          color: AppTheme.textMuted,
+        ),
+      );
+    }
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: items.map((item) {
+      children: nonZero.map((item) {
         final (label, icon, color, count) = item;
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -2093,6 +3214,16 @@ class _FollowUpCardState extends State<_FollowUpCard>
       f['status'] = 'Completed';
       f['completedAt'] = DateTime.now();
     });
+    // Mark linked reminder as completed too (interconnected logic)
+    final fuId = f['id'] as String? ?? '';
+    if (fuId.isNotEmpty) {
+      for (final rem in globalReminderMaps) {
+        if (rem['linkedFollowUpId'] == fuId) {
+          rem['isCompleted'] = true;
+          rem['status'] = 'Completed';
+        }
+      }
+    }
     widget.onUpdate();
     // Show reschedule sheet — non-dismissible until filled
     showModalBottomSheet(
@@ -2111,11 +3242,32 @@ class _FollowUpCardState extends State<_FollowUpCard>
     );
   }
 
+  String _statusLabel(Map<String, dynamic> f) {
+    final status = f['status'] as String? ?? '';
+    final dueDate = f['dueDate'] as DateTime;
+    final now = DateTime.now();
+
+    if (status == 'Completed') return 'Completed';
+
+    // Determine Due vs Upcoming based on date
+    if (dueDate.isBefore(now)) {
+      return 'Due'; // Past date, no action taken
+    } else {
+      return 'Upcoming'; // Future date
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final f = widget.followUp;
-    final isOverdue = f['isOverdue'] == true || f['status'] == 'Overdue';
-    final statusColor = _statusColor(f['status'] as String);
+    final dueDate = f['dueDate'] as DateTime;
+    final now = DateTime.now();
+    // Compute correct status: Due (past, no action) / Upcoming (future) / Completed
+    final computedStatus = _statusLabel(f);
+    final isCompleted = computedStatus == 'Completed';
+    final isOverdue =
+        computedStatus == 'Due' && dueDate.isBefore(now) && !isCompleted;
+    final statusColor = _statusColor(computedStatus);
     final typeColor = _typeColor(f['type'] as String);
     final tags = (f['tags'] as List?)?.cast<String>() ?? [];
     final agent = _agentByName(f['assignedAgent'] as String);
@@ -2125,11 +3277,21 @@ class _FollowUpCardState extends State<_FollowUpCard>
     final waDone = f['whatsappDone'] as int? ?? 0;
     final emailDone = f['emailDone'] as int? ?? 0;
     final videoDone = f['videoDone'] as int? ?? 0;
+    final instagramDone = f['instagramDone'] as int? ?? 0;
+    final facebookDone = f['facebookDone'] as int? ?? 0;
+    final twitterDone = f['twitterDone'] as int? ?? 0;
+    final telegramDone = f['telegramDone'] as int? ?? 0;
     final hasActivity =
-        callsDone + msgDone + waDone + emailDone + videoDone > 0;
-    // Overdue escalation: calculate hours overdue
-    final dueDate = f['dueDate'] as DateTime;
-    final now = DateTime.now();
+        callsDone +
+            msgDone +
+            waDone +
+            emailDone +
+            videoDone +
+            instagramDone +
+            facebookDone +
+            twitterDone +
+            telegramDone >
+        0;
     final hoursOverdue = isOverdue ? now.difference(dueDate).inHours : 0;
     final isEscalated = hoursOverdue > 24;
     final isCritical = hoursOverdue > 48;
@@ -2138,332 +3300,858 @@ class _FollowUpCardState extends State<_FollowUpCard>
       opacity: _fade,
       child: SlideTransition(
         position: _slide,
-        child: GestureDetector(
-          onTap: () {
-            _showDetailsSheet(context);
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isCritical
-                    ? AppTheme.error
-                    : isOverdue
-                    ? AppTheme.error.withAlpha(80)
-                    : AppTheme.surface200,
-                width: isCritical || isOverdue ? 2 : 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(10),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                if (isOverdue)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isCritical
-                          ? AppTheme.error.withAlpha(30)
-                          : AppTheme.error.withAlpha(20),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isCritical
-                              ? Icons.error_rounded
-                              : Icons.warning_rounded,
-                          size: 13,
-                          color: AppTheme.error,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          isCritical
-                              ? '⚠️ CRITICAL — ${hoursOverdue}h overdue — Escalate now!'
-                              : isEscalated
-                              ? '🔴 ESCALATED — ${hoursOverdue}h overdue'
-                              : 'OVERDUE — ${_formatDue(dueDate)}',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.error,
-                          ),
-                        ),
-                      ],
-                    ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GestureDetector(
+              onTap: () => _showActionsBottomSheet(context, f),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isCritical
+                        ? AppTheme.error
+                        : isOverdue
+                        ? AppTheme.error.withAlpha(80)
+                        : AppTheme.surface200,
+                    width: isCritical || isOverdue ? 2 : 1,
                   ),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: typeColor.withAlpha(31),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              _typeIcon(f['type'] as String),
-                              color: typeColor,
-                              size: 20,
-                            ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(10),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    if (isOverdue)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isCritical
+                              ? AppTheme.error.withAlpha(30)
+                              : AppTheme.error.withAlpha(20),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  f['title'] as String,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                ),
-                                const SizedBox(height: 2),
-                                // Stack name and phone vertically
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.person_outline_rounded,
-                                      size: 12,
-                                      color: AppTheme.textMuted,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Expanded(
-                                      child: Text(
-                                        f['linkedLead'] as String,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 11,
-                                          color: AppTheme.textSecondary,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if ((f['customerPhone'] as String? ?? '')
-                                    .isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.phone_rounded,
-                                        size: 11,
-                                        color: AppTheme.textMuted,
-                                      ),
-                                      const SizedBox(width: 3),
-                                      Expanded(
-                                        child: Text(
-                                          f['customerPhone'] as String,
-                                          style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 10,
-                                            color: AppTheme.textMuted,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isCritical
+                                  ? Icons.error_rounded
+                                  : Icons.warning_rounded,
+                              size: 13,
+                              color: AppTheme.error,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          _StatusBadge(
-                            label: f['status'] as String,
-                            color: statusColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Builder(
-                            builder: (btnCtx) => GestureDetector(
-                              onTap: () => _showThreeDots(btnCtx),
-                              child: Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.surface100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.more_vert_rounded,
-                                  size: 16,
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 12,
-                            backgroundColor: agent.color.withAlpha(40),
-                            child: Text(
-                              agent.initials,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: agent.color,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              freq.isNotEmpty
-                                  ? '${agent.name} · $freq'
-                                  : agent.name,
+                            const SizedBox(width: 6),
+                            Text(
+                              isCritical
+                                  ? '⚠️ CRITICAL — ${hoursOverdue}h overdue — Escalate now!'
+                                  : isEscalated
+                                  ? '🔴 ESCALATED — ${hoursOverdue}h overdue'
+                                  : 'DUE — ${_formatDue(dueDate)}',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
-                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.error,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          _InfoChip(
-                            icon: Icons.schedule_rounded,
-                            label: _formatDue(dueDate),
-                            color: isOverdue
-                                ? AppTheme.error
-                                : AppTheme.textSecondary,
-                          ),
-                        ],
-                      ),
-                      // Created date row
-                      if (f['createdAt'] != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            _InfoChip(
-                              icon: Icons.calendar_today_rounded,
-                              label: _formatCreatedAt(
-                                f['createdAt'] as DateTime,
-                              ),
-                              color: AppTheme.textMuted,
                             ),
                           ],
                         ),
-                      ],
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          _TypeBadge(
-                            label: f['type'] as String,
-                            color: typeColor,
-                          ),
-                          const SizedBox(width: 8),
-                          _PriorityBadge(priority: f['priority'] as String),
-                          if (freq.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            _InfoChip(
-                              icon: Icons.autorenew_rounded,
-                              label: freq,
-                              color: const Color(0xFF8B5CF6),
-                            ),
-                          ],
-                        ],
                       ),
-                      if (tags.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          children: tags
-                              .map(
-                                (t) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: typeColor.withAlpha(31),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  _typeIcon(f['type'] as String),
+                                  color: typeColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      f['title'] as String,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.person_outline_rounded,
+                                          size: 12,
+                                          color: AppTheme.textMuted,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Expanded(
+                                          child: Text(
+                                            f['linkedLead'] as String,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 11,
+                                              color: AppTheme.textSecondary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if ((f['customerPhone'] as String? ?? '')
+                                        .isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.phone_rounded,
+                                            size: 11,
+                                            color: AppTheme.textMuted,
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Expanded(
+                                            child: Text(
+                                              f['customerPhone'] as String,
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    fontSize: 10,
+                                                    color: AppTheme.textMuted,
+                                                  ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Use computed status label
+                              _StatusBadge(
+                                label: computedStatus,
+                                color: statusColor,
+                              ),
+                              // No 3-dots — tap card to see all details + actions
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 12,
+                                backgroundColor: agent.color.withAlpha(40),
+                                child: Text(
+                                  agent.initials,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: agent.color,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  freq.isNotEmpty
+                                      ? '${agent.name} · $freq'
+                                      : agent.name,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    color: AppTheme.textSecondary,
                                   ),
-                                  child: Text(
-                                    t,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 10,
-                                      color: AppTheme.primary,
-                                      fontWeight: FontWeight.w500,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          // Due date/time + due status row
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                size: 12,
+                                color: isOverdue
+                                    ? AppTheme.error
+                                    : AppTheme.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatDueDateTime(dueDate),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: isOverdue
+                                      ? AppTheme.error
+                                      : AppTheme.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isOverdue
+                                      ? AppTheme.error.withAlpha(20)
+                                      : computedStatus == 'Upcoming'
+                                      ? const Color(0xFF0891B2).withAlpha(20)
+                                      : computedStatus == 'Completed'
+                                      ? AppTheme.success.withAlpha(20)
+                                      : AppTheme.primary.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  _formatDue(dueDate),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: isOverdue
+                                        ? AppTheme.error
+                                        : computedStatus == 'Upcoming'
+                                        ? const Color(0xFF0891B2)
+                                        : computedStatus == 'Completed'
+                                        ? AppTheme.success
+                                        : AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              _TypeBadge(
+                                label: f['type'] as String,
+                                color: typeColor,
+                              ),
+                              const SizedBox(width: 8),
+                              _PriorityBadge(priority: f['priority'] as String),
+                              if (freq.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                _InfoChip(
+                                  icon: Icons.autorenew_rounded,
+                                  label: freq,
+                                  color: const Color(0xFF8B5CF6),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (tags.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                // Existing customer tag
+                                if (f['isExistingCustomer'] == true)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.success.withAlpha(20),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: AppTheme.success.withAlpha(60),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.verified_rounded,
+                                          size: 10,
+                                          color: AppTheme.success,
+                                        ),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          'Existing Customer',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 10,
+                                            color: AppTheme.success,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ...tags.map(
+                                  (t) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      t,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10,
+                                        color: AppTheme.primary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                      if (hasActivity) ...[
-                        const SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              if (callsDone > 0)
-                                _CountChip(
-                                  icon: Icons.phone_rounded,
-                                  count: callsDone,
-                                  color: AppTheme.success,
-                                ),
-                              if (msgDone > 0)
-                                _CountChip(
-                                  icon: Icons.message_rounded,
-                                  count: msgDone,
-                                  color: const Color(0xFF8B5CF6),
-                                ),
-                              if (waDone > 0)
-                                _CountChip(
-                                  icon: Icons.chat_rounded,
-                                  count: waDone,
-                                  color: const Color(0xFF25D366),
-                                ),
-                              if (emailDone > 0)
-                                _CountChip(
-                                  icon: Icons.email_rounded,
-                                  count: emailDone,
-                                  color: AppTheme.primary,
-                                ),
-                              if (videoDone > 0)
-                                _CountChip(
-                                  icon: Icons.videocam_rounded,
-                                  count: videoDone,
-                                  color: const Color(0xFF0891B2),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
+                              ],
+                            ),
+                          ],
+                          if (hasActivity) ...[
+                            const SizedBox(height: 8),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  if (callsDone > 0)
+                                    _CountChip(
+                                      icon: Icons.phone_rounded,
+                                      count: callsDone,
+                                      color: AppTheme.success,
+                                    ),
+                                  if (msgDone > 0)
+                                    _CountChip(
+                                      icon: Icons.message_rounded,
+                                      count: msgDone,
+                                      color: const Color(0xFF8B5CF6),
+                                    ),
+                                  if (waDone > 0)
+                                    _CountChip(
+                                      icon: Icons.chat_rounded,
+                                      count: waDone,
+                                      color: const Color(0xFF25D366),
+                                    ),
+                                  if (emailDone > 0)
+                                    _CountChip(
+                                      icon: Icons.email_rounded,
+                                      count: emailDone,
+                                      color: AppTheme.primary,
+                                    ),
+                                  if (videoDone > 0)
+                                    _CountChip(
+                                      icon: Icons.videocam_rounded,
+                                      count: videoDone,
+                                      color: const Color(0xFF0891B2),
+                                    ),
+                                  if (instagramDone > 0)
+                                    _CountChip(
+                                      icon: Icons.camera_alt_rounded,
+                                      count: instagramDone,
+                                      color: const Color(0xFFE1306C),
+                                    ),
+                                  if (facebookDone > 0)
+                                    _CountChip(
+                                      icon: Icons.facebook_rounded,
+                                      count: facebookDone,
+                                      color: const Color(0xFF1877F2),
+                                    ),
+                                  if (twitterDone > 0)
+                                    _CountChip(
+                                      icon: Icons.close_rounded,
+                                      count: twitterDone,
+                                      color: const Color(0xFF000000),
+                                    ),
+                                  if (telegramDone > 0)
+                                    _CountChip(
+                                      icon: Icons.send_rounded,
+                                      count: telegramDone,
+                                      color: const Color(0xFF0088CC),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          // Status tag on card
+                          const SizedBox(height: 8),
+                          _buildCardStatusTag(f),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Card tap opens bottom sheet with actions + See Details
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardStatusTag(Map<String, dynamic> f) {
+    final status = f['status'] as String? ?? '';
+    final dueDate = f['dueDate'] as DateTime;
+    final completedAt = f['completedAt'] as DateTime?;
+    final cancelReason = f['cancelReason'] as String? ?? '';
+
+    if (status == 'Completed' && completedAt != null) {
+      final isOnTime =
+          completedAt.isBefore(dueDate) ||
+          completedAt.isAtSameMomentAs(dueDate);
+      final label = isOnTime ? 'Completed On Time' : 'Completed After Due';
+      final color = isOnTime ? AppTheme.success : AppTheme.warning;
+      final icon = isOnTime
+          ? Icons.check_circle_rounded
+          : Icons.schedule_rounded;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withAlpha(20),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 11, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (status == 'Cancelled') {
+      final now = DateTime.now();
+      final isAfterDue = dueDate.isBefore(now);
+      final label = isAfterDue ? 'Cancelled After Due' : 'Cancelled';
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.error.withAlpha(20),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.error.withAlpha(60)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cancel_rounded, size: 11, color: AppTheme.error),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.error,
                   ),
                 ),
               ],
             ),
           ),
+          if (cancelReason.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Reason: $cancelReason',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                color: AppTheme.error,
+                fontStyle: FontStyle.italic,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildInlineActionsPanel(
+    BuildContext context,
+    Map<String, dynamic> f,
+  ) {
+    final preferred = (f['preferredContact'] as List?)?.cast<String>() ?? [];
+    final customerName = f['linkedLead'] as String;
+    final leadMap = leads_list.globalLeads.firstWhere(
+      (m) => m['id'] == f['linkedLeadId'] || m['name'] == customerName,
+      orElse: () => {},
+    );
+    final hasInstagram = (leadMap['instagram'] as String? ?? '').isNotEmpty;
+    final hasFacebook = (leadMap['facebook'] as String? ?? '').isNotEmpty;
+    final hasTwitter = (leadMap['twitter'] as String? ?? '').isNotEmpty;
+    final hasTelegram = (leadMap['telegram'] as String? ?? '').isNotEmpty;
+
+    void doAction(String action, String actionKey) {
+      bool isPreferred = preferred.isEmpty || preferred.contains(action);
+      if (!isPreferred) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Not Preferred',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              '$action is not preferred for $customerName. Proceed anyway?',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
+                  });
+                  widget.onUpdate();
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.warning,
+                ),
+                child: Text(
+                  'Proceed',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        setState(() {
+          f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
+        });
+        widget.onUpdate();
+      }
+    }
+
+    void doSocialAction(String platform, bool hasData, String actionKey) {
+      if (!hasData) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'No Data Found',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+            ),
+            content: Text(
+              'No $platform data found for $customerName.',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                ),
+                child: Text(
+                  'OK',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        setState(() {
+          f[actionKey] = (f[actionKey] as int? ?? 0) + 1;
+        });
+        widget.onUpdate();
+      }
+    }
+
+    void cancelFollowUp() {
+      final reasonCtrl = TextEditingController();
+      showDialog(
+        context: context,
+        builder: (_) => StatefulBuilder(
+          builder: (ctx, setS) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.cancel_rounded, color: AppTheme.error, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  'Cancel Follow-up',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Please provide a reason for cancellation:',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: reasonCtrl,
+                  maxLines: 3,
+                  onChanged: (_) => setS(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Customer not interested...',
+                    filled: true,
+                    fillColor: AppTheme.surface100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  'Back',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+              FilledButton(
+                onPressed: reasonCtrl.text.trim().isEmpty
+                    ? null
+                    : () {
+                        Navigator.pop(ctx);
+                        final reason = reasonCtrl.text.trim();
+                        final idx = globalFollowUpMaps.indexWhere(
+                          (m) => m['id'] == f['id'],
+                        );
+                        if (idx >= 0) {
+                          globalFollowUpMaps[idx]['status'] = 'Cancelled';
+                          globalFollowUpMaps[idx]['cancelReason'] = reason;
+                        }
+                        setState(() {
+                          f['status'] = 'Cancelled';
+                          f['cancelReason'] = reason;
+                          _actionsExpanded = false;
+                        });
+                        widget.onUpdate();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Follow-up cancelled'),
+                            backgroundColor: AppTheme.error,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      },
+                style: FilledButton.styleFrom(backgroundColor: AppTheme.error),
+                child: Text(
+                  'Cancel Follow-up',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 0),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surface100,
+        border: Border.all(color: AppTheme.surface200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Actions',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _ActionBtn(
+                icon: Icons.phone_rounded,
+                label: 'Call',
+                color: AppTheme.success,
+                onTap: () => doAction('Calls', 'callsDone'),
+              ),
+              _ActionBtn(
+                icon: Icons.message_rounded,
+                label: 'Message',
+                color: const Color(0xFF8B5CF6),
+                onTap: () => doAction('Messages', 'messagesDone'),
+              ),
+              _ActionBtn(
+                icon: Icons.chat_rounded,
+                label: 'WhatsApp',
+                color: const Color(0xFF25D366),
+                onTap: () => doAction('WhatsApp Messages', 'whatsappDone'),
+              ),
+              _ActionBtn(
+                icon: Icons.email_rounded,
+                label: 'Email',
+                color: AppTheme.primary,
+                onTap: () => doAction('Email', 'emailDone'),
+              ),
+              _ActionBtn(
+                icon: Icons.videocam_rounded,
+                label: 'Video Call',
+                color: const Color(0xFF0891B2),
+                onTap: () => doAction('Video Call', 'videoDone'),
+              ),
+              _ActionBtn(
+                icon: Icons.camera_alt_rounded,
+                label: 'Instagram',
+                color: hasInstagram
+                    ? const Color(0xFFE1306C)
+                    : AppTheme.textMuted,
+                onTap: () =>
+                    doSocialAction('Instagram', hasInstagram, 'instagramDone'),
+              ),
+              _ActionBtn(
+                icon: Icons.facebook_rounded,
+                label: 'Facebook',
+                color: hasFacebook
+                    ? const Color(0xFF1877F2)
+                    : AppTheme.textMuted,
+                onTap: () =>
+                    doSocialAction('Facebook', hasFacebook, 'facebookDone'),
+              ),
+              _ActionBtn(
+                icon: Icons.close_rounded,
+                label: 'X (Twitter)',
+                color: hasTwitter
+                    ? const Color(0xFF000000)
+                    : AppTheme.textMuted,
+                onTap: () =>
+                    doSocialAction('X (Twitter)', hasTwitter, 'twitterDone'),
+              ),
+              _ActionBtn(
+                icon: Icons.send_rounded,
+                label: 'Telegram',
+                color: hasTelegram
+                    ? const Color(0xFF0088CC)
+                    : AppTheme.textMuted,
+                onTap: () =>
+                    doSocialAction('Telegram', hasTelegram, 'telegramDone'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (f['status'] != 'Completed' && f['status'] != 'Cancelled')
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _markComplete(context),
+                icon: const Icon(Icons.check_circle_rounded, size: 16),
+                label: Text(
+                  'Mark Complete',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3D9970),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          if (f['status'] != 'Completed' && f['status'] != 'Cancelled') ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: cancelFollowUp,
+                icon: const Icon(Icons.cancel_outlined, size: 16),
+                label: Text(
+                  'Cancel Follow-up',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.error,
+                  side: BorderSide(color: AppTheme.error),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -2799,8 +4487,7 @@ class _NewFollowUpSheet extends StatefulWidget {
 
 class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
   final _titleCtrl = TextEditingController();
-  final _leadCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  final _leadSearchCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   String _type = 'Calls';
   String _priority = 'Medium';
@@ -2809,6 +4496,20 @@ class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
   _AgentInfo? _selectedAgent;
   DateTime? _dueDate;
   TimeOfDay? _dueTime;
+  bool _addToReminders = true; // Default ON
+
+  // Alarm / reminder fields (shown when _addToReminders is true)
+  bool _hasAlarm = false;
+  DateTime? _alarmDate;
+  TimeOfDay? _alarmTime;
+  String _remindBefore = '15 minutes';
+  String _reminderRepeat = 'None';
+  final List<String> _notifyVia = ['Push', 'In-App'];
+
+  // Lead picker state (same as sessions)
+  Map<String, dynamic>? _selectedLead;
+  String _leadSearchQuery = '';
+  bool _showLeadSearch = false;
 
   static const _types = [
     'Calls',
@@ -2835,7 +4536,7 @@ class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
 
   bool get _canSave =>
       _titleCtrl.text.trim().isNotEmpty &&
-      _leadCtrl.text.trim().isNotEmpty &&
+      _selectedLead != null &&
       _selectedAgent != null &&
       _dueDate != null &&
       _preferredContact.isNotEmpty;
@@ -2858,11 +4559,19 @@ class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
+  List<Map<String, dynamic>> get _filteredLeads {
+    final q = _leadSearchQuery.toLowerCase();
+    return leads_list.globalLeads.where((m) {
+      final name = (m['name'] as String? ?? '').toLowerCase();
+      final phone = (m['phone'] as String? ?? '').toLowerCase();
+      return q.isEmpty || name.contains(q) || phone.contains(q);
+    }).toList();
+  }
+
   @override
   void dispose() {
     _titleCtrl.dispose();
-    _leadCtrl.dispose();
-    _phoneCtrl.dispose();
+    _leadSearchCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
   }
@@ -2928,14 +4637,324 @@ class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
                 'e.g. Follow up with Rahul Mehta',
               ),
               const SizedBox(height: 12),
-              _buildField('Customer / Lead Name *', _leadCtrl, 'Customer name'),
-              const SizedBox(height: 12),
-              _buildField(
-                'Customer Phone',
-                _phoneCtrl,
-                '+91 XXXXX XXXXX',
-                keyboardType: TextInputType.phone,
+              // Customer picker from leads (same as sessions)
+              _buildLabel('Customer *'),
+              const SizedBox(height: 6),
+              GestureDetector(
+                onTap: () => setState(() => _showLeadSearch = !_showLeadSearch),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _selectedLead != null
+                        ? AppTheme.primaryContainer
+                        : AppTheme.surface100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _selectedLead != null
+                          ? AppTheme.primary.withAlpha(60)
+                          : AppTheme.surface200,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.person_search_rounded,
+                        size: 16,
+                        color: _selectedLead != null
+                            ? AppTheme.primary
+                            : AppTheme.textMuted,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _selectedLead != null
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedLead!['name'] as String? ?? '',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.primary,
+                                    ),
+                                  ),
+                                  if ((_selectedLead!['phone'] as String? ?? '')
+                                      .isNotEmpty)
+                                    Text(
+                                      _selectedLead!['phone'] as String,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                ],
+                              )
+                            : Text(
+                                'Search and select customer from leads',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  color: AppTheme.textMuted,
+                                ),
+                              ),
+                      ),
+                      if (_selectedLead != null)
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedLead = null),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: AppTheme.textMuted,
+                          ),
+                        )
+                      else
+                        Icon(
+                          _showLeadSearch
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          size: 18,
+                          color: AppTheme.textMuted,
+                        ),
+                    ],
+                  ),
+                ),
               ),
+              if (_showLeadSearch) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _leadSearchCtrl,
+                  autofocus: true,
+                  onChanged: (v) => setState(() => _leadSearchQuery = v),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or phone...',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 16),
+                    filled: true,
+                    fillColor: AppTheme.surface100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.surface200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(10),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: _filteredLeads.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            'No leads found',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              color: AppTheme.textMuted,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          itemCount: _filteredLeads.length,
+                          itemBuilder: (_, i) {
+                            final lead = _filteredLeads[i];
+                            return InkWell(
+                              onTap: () {
+                                final name = lead['name'] as String? ?? '';
+                                final id = lead['id'] as String? ?? '';
+                                // Check if customer already in active follow-up or session
+                                final inFollowUp = globalFollowUpMaps.any((f) {
+                                  final fStatus = f['status'] as String? ?? '';
+                                  if (fStatus == 'Completed' ||
+                                      fStatus == 'Cancelled') {
+                                    return false;
+                                  }
+                                  return f['linkedLead'] == name ||
+                                      (id.isNotEmpty &&
+                                          f['linkedLeadId'] == id);
+                                });
+                                final inSession = globalSessionMaps.any((s) {
+                                  final sStatus = s['status'] as String? ?? '';
+                                  if (sStatus == 'Completed' ||
+                                      sStatus == 'Cancelled') {
+                                    return false;
+                                  }
+                                  return s['linkedLead'] == name ||
+                                      (id.isNotEmpty &&
+                                          s['linkedLeadId'] == id);
+                                });
+                                if (inFollowUp || inSession) {
+                                  final where = inFollowUp
+                                      ? 'Follow-up'
+                                      : 'Session';
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: AppTheme.warning,
+                                            size: 22,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Already in $where',
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 15,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      content: Text(
+                                        '$name is already assigned in an active $where. Do you want to reschedule to this follow-up or continue that $where?',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          height: 1.5,
+                                        ),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            // Go to that screen
+                                            if (inFollowUp) {
+                                              Navigator.pop(context);
+                                              context.go(
+                                                AppRoutes.followUpsScreen,
+                                              );
+                                            } else {
+                                              Navigator.pop(context);
+                                              context.go(
+                                                AppRoutes.sessionsScreen,
+                                              );
+                                            }
+                                          },
+                                          child: Text(
+                                            'Go to $where',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              color: AppTheme.primary,
+                                            ),
+                                          ),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            setState(() {
+                                              _selectedLead = lead;
+                                              _showLeadSearch = false;
+                                              _leadSearchQuery = '';
+                                              _leadSearchCtrl.clear();
+                                            });
+                                          },
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: AppTheme.warning,
+                                          ),
+                                          child: Text(
+                                            'Continue',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                } else {
+                                  setState(() {
+                                    _selectedLead = lead;
+                                    _showLeadSearch = false;
+                                    _leadSearchQuery = '';
+                                    _leadSearchCtrl.clear();
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: AppTheme.surface200,
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: AppTheme.primary
+                                          .withAlpha(30),
+                                      child: Text(
+                                        (lead['name'] as String? ?? '?')[0],
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppTheme.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            lead['name'] as String? ?? '',
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          if ((lead['phone'] as String? ?? '')
+                                              .isNotEmpty)
+                                            Text(
+                                              lead['phone'] as String,
+                                              style:
+                                                  GoogleFonts.plusJakartaSans(
+                                                    fontSize: 11,
+                                                    color:
+                                                        AppTheme.textSecondary,
+                                                  ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
               const SizedBox(height: 12),
               // Type
               _buildLabel('Follow-up Type *'),
@@ -3280,6 +5299,408 @@ class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
                 'Add notes...',
                 maxLines: 2,
               ),
+              const SizedBox(height: 16),
+              // Add to Reminders toggle with full alarm logic (same as schedule new session)
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _addToReminders
+                      ? AppTheme.primary.withAlpha(15)
+                      : AppTheme.surface100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _addToReminders
+                        ? AppTheme.primary.withAlpha(80)
+                        : AppTheme.surface200,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.alarm_rounded,
+                          size: 18,
+                          color: _addToReminders
+                              ? AppTheme.primary
+                              : AppTheme.textMuted,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Add to Reminders',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _addToReminders
+                                      ? AppTheme.primary
+                                      : AppTheme.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                _addToReminders
+                                    ? 'A reminder will be created automatically'
+                                    : 'No reminder will be created',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: _addToReminders
+                                      ? AppTheme.primary
+                                      : AppTheme.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _addToReminders,
+                          onChanged: (v) => setState(() => _addToReminders = v),
+                          activeThumbColor: AppTheme.primary,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ],
+                    ),
+                    if (_addToReminders) ...[
+                      const SizedBox(height: 12),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
+                      // Set Alarm toggle
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.alarm_on_rounded,
+                            size: 16,
+                            color: _hasAlarm
+                                ? const Color(0xFF0891B2)
+                                : AppTheme.textMuted,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Set Alarm',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: _hasAlarm
+                                    ? const Color(0xFF0891B2)
+                                    : AppTheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                          Switch(
+                            value: _hasAlarm,
+                            onChanged: (v) {
+                              setState(() {
+                                _hasAlarm = v;
+                                if (v && _dueDate != null) {
+                                  _alarmDate = _dueDate;
+                                  _alarmTime = _dueTime;
+                                }
+                              });
+                            },
+                            activeThumbColor: const Color(0xFF0891B2),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ],
+                      ),
+                      if (_hasAlarm) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  final d = await showDatePicker(
+                                    context: context,
+                                    initialDate:
+                                        _alarmDate ??
+                                        _dueDate ??
+                                        DateTime.now(),
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime.now().add(
+                                      const Duration(days: 365),
+                                    ),
+                                  );
+                                  if (d != null) setState(() => _alarmDate = d);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surface100,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: _alarmDate != null
+                                          ? const Color(
+                                              0xFF0891B2,
+                                            ).withAlpha(60)
+                                          : AppTheme.surface200,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 13,
+                                        color: Color(0xFF0891B2),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        _alarmDate != null
+                                            ? '${_alarmDate!.day}/${_alarmDate!.month}/${_alarmDate!.year}'
+                                            : 'Alarm date',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          color: _alarmDate != null
+                                              ? AppTheme.textPrimary
+                                              : AppTheme.textMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  final t = await showTimePicker(
+                                    context: context,
+                                    initialTime:
+                                        _alarmTime ??
+                                        _dueTime ??
+                                        TimeOfDay.now(),
+                                  );
+                                  if (t != null) setState(() => _alarmTime = t);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surface100,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: _alarmTime != null
+                                          ? const Color(
+                                              0xFF0891B2,
+                                            ).withAlpha(60)
+                                          : AppTheme.surface200,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.access_time_rounded,
+                                        size: 13,
+                                        color: Color(0xFF0891B2),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        _alarmTime != null
+                                            ? _alarmTime!.format(context)
+                                            : 'Alarm time',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          color: _alarmTime != null
+                                              ? AppTheme.textPrimary
+                                              : AppTheme.textMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      // Remind Me Before
+                      Text(
+                        'Remind Me Before',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children:
+                            [
+                              '5 minutes',
+                              '15 minutes',
+                              '30 minutes',
+                              '1 hour',
+                              '2 hours',
+                              '1 day',
+                            ].map((o) {
+                              final sel = _remindBefore == o;
+                              return GestureDetector(
+                                onTap: () => setState(() => _remindBefore = o),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: sel
+                                        ? AppTheme.primaryContainer
+                                        : AppTheme.surface100,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: sel
+                                          ? AppTheme.primary
+                                          : AppTheme.surface200,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    o,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: sel
+                                          ? AppTheme.primary
+                                          : AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      // Repeat
+                      Text(
+                        'Repeat',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: ['None', 'Daily', 'Weekly', 'Monthly'].map((
+                          o,
+                        ) {
+                          final sel = _reminderRepeat == o;
+                          return GestureDetector(
+                            onTap: () => setState(() => _reminderRepeat = o),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: sel
+                                    ? AppTheme.primaryContainer
+                                    : AppTheme.surface100,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: sel
+                                      ? AppTheme.primary
+                                      : AppTheme.surface200,
+                                ),
+                              ),
+                              child: Text(
+                                o,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: sel
+                                      ? AppTheme.primary
+                                      : AppTheme.textSecondary,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      // Notify Via
+                      Text(
+                        'Notify Via',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: ['Push', 'In-App', 'WhatsApp', 'Email'].map((
+                          o,
+                        ) {
+                          final sel = _notifyVia.contains(o);
+                          return GestureDetector(
+                            onTap: () => setState(
+                              () => sel
+                                  ? _notifyVia.remove(o)
+                                  : _notifyVia.add(o),
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: sel
+                                    ? AppTheme.primaryContainer
+                                    : AppTheme.surface100,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: sel
+                                      ? AppTheme.primary
+                                      : AppTheme.surface200,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (sel) ...[
+                                    const Icon(
+                                      Icons.check_rounded,
+                                      size: 11,
+                                      color: AppTheme.primary,
+                                    ),
+                                    const SizedBox(width: 3),
+                                  ],
+                                  Text(
+                                    o,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: sel
+                                          ? AppTheme.primary
+                                          : AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -3295,6 +5716,10 @@ class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
                             time.hour,
                             time.minute,
                           );
+                          final lead = _selectedLead!;
+                          final customerName = lead['name'] as String? ?? '';
+                          final customerId = lead['id'] as String? ?? '';
+                          final customerPhone = lead['phone'] as String? ?? '';
                           final newFu = {
                             'id': 'fu-${DateTime.now().millisecondsSinceEpoch}',
                             'title': _titleCtrl.text.trim(),
@@ -3304,9 +5729,9 @@ class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
                             'dueDate': dueDateTime,
                             'assignedAgent': _selectedAgent!.name,
                             'agentInitials': _selectedAgent!.initials,
-                            'linkedLead': _leadCtrl.text.trim(),
-                            'linkedLeadId': '',
-                            'customerPhone': _phoneCtrl.text.trim(),
+                            'linkedLead': customerName,
+                            'linkedLeadId': customerId,
+                            'customerPhone': customerPhone,
                             'notes': _notesCtrl.text.trim(),
                             'outcome': '',
                             'isRecurring': _frequency != 'Custom',
@@ -3322,14 +5747,70 @@ class _NewFollowUpSheetState extends State<_NewFollowUpSheet> {
                                 ? _preferredContact.first
                                 : _type,
                             'reminderBefore': '1 hour',
-                            'isExistingCustomer': false,
+                            'isExistingCustomer':
+                                lead['isExistingCustomer'] ?? false,
                             'callsDone': 0,
                             'messagesDone': 0,
                             'whatsappDone': 0,
                             'emailDone': 0,
                             'videoDone': 0,
+                            'twitterDone': 0,
                             'upcomingFollowUps': <String>[],
                           };
+                          // Auto-create reminder if toggle is on
+                          final fuId =
+                              'fu-${DateTime.now().millisecondsSinceEpoch}';
+                          if (_addToReminders) {
+                            DateTime? alarmDt;
+                            if (_hasAlarm && _alarmDate != null) {
+                              final at = _alarmTime;
+                              alarmDt = at != null
+                                  ? DateTime(
+                                      _alarmDate!.year,
+                                      _alarmDate!.month,
+                                      _alarmDate!.day,
+                                      at.hour,
+                                      at.minute,
+                                    )
+                                  : DateTime(
+                                      _alarmDate!.year,
+                                      _alarmDate!.month,
+                                      _alarmDate!.day,
+                                      9,
+                                      0,
+                                    );
+                            }
+                            globalReminderMaps.insert(0, {
+                              'id':
+                                  'rem-fu-${DateTime.now().millisecondsSinceEpoch}',
+                              'title':
+                                  '$customerName — Follow-up: ${_titleCtrl.text.trim()}',
+                              'type': 'Follow-up',
+                              'reminderTag': 'Follow-up',
+                              'status': 'Active',
+                              'priority': _priority,
+                              'dateTime': dueDateTime,
+                              'alarmDateTime': alarmDt,
+                              'hasAlarm': _hasAlarm && alarmDt != null,
+                              'repeatFrequency': _reminderRepeat,
+                              'remindBefore': _remindBefore,
+                              'notifyVia': List<String>.from(_notifyVia),
+                              'linkedLead': customerName,
+                              'linkedLeadId': customerId,
+                              'linkedLeadPhone': customerPhone,
+                              'linkedLeadEmail': lead['email'] as String? ?? '',
+                              'assignedHost': _selectedAgent!.name,
+                              'assignedHostInitials': _selectedAgent!.initials,
+                              'snoozed': false,
+                              'snoozeUntil': null,
+                              'snoozeCount': 0,
+                              'notes': _notesCtrl.text.trim(),
+                              'createdAt': DateTime.now(),
+                              'isCompleted': false,
+                              'linkedFollowUpId': fuId,
+                              'linkedSessionId': null,
+                            });
+                          }
                           Navigator.pop(context);
                           widget.onSave(newFu);
                         }
@@ -3412,7 +5893,7 @@ class _FollowUpTemplatesSheet extends StatelessWidget {
   final void Function(Map<String, dynamic>) onUseTemplate;
   const _FollowUpTemplatesSheet({required this.onUseTemplate});
 
-  static final _templates = [
+  List<Map<String, dynamic>> get _templates => [
     {
       'name': 'Quick Call Check-in',
       'icon': Icons.phone_rounded,
@@ -3663,6 +6144,51 @@ class _BulkBtn extends StatelessWidget {
           children: [
             Icon(icon, size: 14, color: color),
             const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Action Button Widget ─────────────────────────────────────────────────────
+
+class _ActionBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _ActionBtn({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withAlpha(15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 5),
             Text(
               label,
               style: GoogleFonts.plusJakartaSans(

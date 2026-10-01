@@ -13,6 +13,139 @@ import './widgets/pipeline_kpi_widget.dart';
 
 // Global leads list — starts with rich default leads showing all possible fields
 final List<Map<String, dynamic>> globalLeadMaps = [
+// ── FULLY FILLED TEST LEAD — shows every Add Lead field in overview ──
+{ 'id': 'test-full-001',
+'name': 'Arjun Kapoor',
+'phone': '+91 99887 76655',
+'email': 'arjun.kapoor@fulltest.in',
+'company': 'FullTest Enterprises',
+'industry': 'Manufacturing',
+'status': 'Proposed',
+'priority': 'High',
+'score': 88,
+'dealValue': 850000.0,
+'ownerInitials': 'PS',
+'ownerName': 'Priya Sharma',
+'lastContact': 'Today',
+'tags': ['Life Insurance', 'Health Cover', 'Motor Insurance', 'Mutual Funds', 'Home Loan'],
+// ── Step 1: Contact Info ── 'salutation': 'Mr.',
+'firstName': 'Arjun',
+'middleName': 'Raj',
+'lastName': 'Kapoor',
+'nickname': 'AK',
+'primaryMobile': '+91 99887 76655',
+'alternatePhone': '+91 99887 00000',
+'whatsapp': '+91 99887 76655',
+'primaryEmail': 'arjun.kapoor@fulltest.in',
+'secondaryEmail': 'arjun.personal@gmail.com',
+'gender': 'Male',
+'maritalStatus': 'Married',
+'dob': '10/07/1988',
+'anniversaryDate': '15/02/2015',
+'spouseName': 'Neha Kapoor',
+'numberOfDependents': '3',
+'annualIncome': '₹22,00,000',
+'customerType': 'Individual',
+'preferredLanguage': 'Hindi',
+'bestTimeToCall': 'Evening',
+'timezone': 'IST (UTC+5:30)',
+'communicationOptIn': 'SMS, WhatsApp, Email',
+'occupation': 'Factory Owner',
+'degree': 'B.E. Mechanical',
+'companyWorking': 'FullTest Enterprises Pvt Ltd',
+'workingSalary': '₹22,00,000 per annum',
+'yearsOfService': '10 years',
+'pan': 'BCDFE5678G',
+'aadhaar': '9876 5432 1098',
+'gstin': '27BCDFE5678G1Z3',
+// ── Step 2: Business Details ── 'companyName': 'FullTest Enterprises',
+'companyIndustry': 'Manufacturing',
+'designation': 'Managing Director',
+'department': 'Operations',
+'companySize': '51-100',
+'annualRevenue': '₹3 Crore',
+'numberOfEmployees': '75',
+'companyPhone': '+91 22 4567 8901',
+'companyEmail': 'info@fulltest.in',
+'website': 'www.fulltest.in',
+'businessType': 'Private Limited',
+'gstNumber': '27BCDFE5678G1Z3',
+'yearEstablished': '2014',
+'companyPan': 'AABFT5678C',
+'cinNumber': 'U27200MH2014PTC234567',
+'decisionMakerRole': 'MD',
+'decisionLevel': 'C-Suite',
+'companyAddress': '15, MIDC Industrial Area, Pune',
+'businessModel': 'B2B & B2C',
+'fundingStage': 'Bootstrapped',
+'keyCompetitors': 'Godrej, Bosch, Siemens',
+'technologiesUsed': 'SAP, AutoCAD, Tally',
+// ── Step 3: Lead Details ── 'source': 'Referral',
+'campaign': 'Q4 SME Drive',
+'utmSource': 'referral',
+'utmMedium': 'partner',
+'referralName': 'Suresh Joshi',
+'tier': 'Silver',
+'isVip': false,
+'currency': '₹ INR',
+'expectedCloseDate': '${DateTime.now().add(const Duration(days: 45)).day}/${DateTime.now().add(const Duration(days: 45)).month}/${DateTime.now().add(const Duration(days: 45)).year}',
+'scheduledAction': 'Appointment',
+'scheduledActionDate': '${DateTime.now().add(const Duration(days: 5)).day}/${DateTime.now().add(const Duration(days: 5)).month}/${DateTime.now().add(const Duration(days: 5)).year}',
+'scheduledActionTime': '11:00',
+'actionNotes': 'Present comprehensive insurance + investment portfolio proposal.',
+'leadScore': 88.0,
+'leadGrade': 'B+',
+'conversionProbability': 72.0,
+'forecastCategory': 'Pipeline',
+'bantBudget': '₹8,50,000 approved',
+'bantAuthority': 'MD sign-off',
+'bantNeed': 'Life + Health + Motor + Investment portfolio',
+'bantTimeline': 'Q1 2027',
+'quotationId': 'QT-2026-0088',
+'proposalSentDate': '${DateTime.now().subtract(const Duration(days: 3)).day}/${DateTime.now().subtract(const Duration(days: 3)).month}/${DateTime.now().subtract(const Duration(days: 3)).year}',
+'discountPercent': '3%',
+'contractLength': '12 months',
+'renewalFrequency': 'Annual',
+'nextBestAction': 'Follow up on proposal',
+'leadStatusSubState': 'Proposed → Awaiting Decision',
+// ── Step 4: Address ── 'addressType': 'Permanent',
+'address': '15, MIDC Industrial Area',
+'landmark': 'Near Pune Station',
+'city': 'Pune',
+'district': 'Pune',
+'pincode': '411019',
+'state': 'Maharashtra',
+'country': 'India',
+'addressTag': 'Office',
+'region': 'West',
+'ownershipStatus': 'Owned',
+'addressSince': '2014',
+// ── Step 5: Social ── 'linkedin': 'linkedin.com/in/arjunkapoor',
+'twitter': '@arjunkapoor_mfg',
+'facebook': 'facebook.com/arjunkapoor',
+'instagram': '@arjunkapoor',
+'youtube': '',
+'github': '',
+'telegram': '@arjunkapoor_tg',
+'preferredMeetingTool': 'Zoom',
+'calendlyLink': 'calendly.com/arjunkapoor',
+'interests': ['Life Insurance', 'Health Cover', 'Motor Insurance', 'Mutual Funds', 'Home Loan', 'SIP', 'Tax Planning'],
+'interest_Life Insurance': {'priority': 'High', 'readiness': 'Ready to Buy', 'coverAmount': '₹75 Lakh', 'premiumFrequency': 'Annual', 'estimatedPremium': '₹18,000/yr', 'kyc': 'Verified', 'closingProbability': '78%', 'paymentMode': 'NEFT', 'interestStatus': 'Quoted'},
+'interest_Health Cover': {'priority': 'High', 'readiness': 'Comparing Options', 'coverAmount': '₹20 Lakh Family Floater', 'premiumFrequency': 'Annual', 'estimatedPremium': '₹14,000/yr', 'kyc': 'Submitted', 'closingProbability': '65%', 'interestStatus': 'Negotiation'},
+'interest_Motor Insurance': {'priority': 'Medium', 'readiness': 'Renewal Due', 'vehicle': 'Toyota Fortuner 2023', 'premiumFrequency': 'Annual', 'estimatedPremium': '₹22,000/yr', 'kyc': 'Verified', 'interestStatus': 'Exploring'},
+'interest_Mutual Funds': {'priority': 'High', 'readiness': 'Ready to Invest', 'investmentAmount': '₹30,000/month SIP', 'riskProfile': 'Moderate', 'interestStatus': 'Quoted'},
+'interest_Home Loan': {'priority': 'Medium', 'readiness': 'Exploring', 'loanAmount': '₹60 Lakh', 'tenure': '20 years', 'interestStatus': 'Exploring'},
+'interest_SIP': {'priority': 'High', 'readiness': 'Active', 'investmentAmount': '₹15,000/month', 'riskProfile': 'Moderate', 'interestStatus': 'Won'},
+'interest_Tax Planning': {'priority': 'Medium', 'readiness': 'Planning', 'targetSaving': '₹1,50,000 under 80C', 'interestStatus': 'Exploring'},
+// ── Interest-specific Notes ── 'interest_notes_Life Insurance': 'Customer wants ₹75L term cover. Prefers LIC or HDFC. Annual premium budget around ₹18K. Nominee: Neha Kapoor (spouse).',
+'interest_notes_Health Cover': 'Family floater for 4 members. Comparing Star Health vs Niva Bupa. Needs cashless at Pune hospitals.',
+'interest_notes_Mutual Funds': 'Ready to start ₹30K/month SIP. Prefers large-cap + balanced funds. Risk: Moderate.',
+'relations': [ {'name': 'Neha Kapoor', 'relation': 'Spouse', 'phone': '+91 99887 11111', 'age': '33', 'occupation': 'Teacher', 'email': 'neha.kapoor@gmail.com', 'gender': 'Female', 'isCoApplicant': true, 'isBeneficiary': true, 'influenceLevel': '4', 'annualIncome': '₹6,00,000'},
+{'name': 'Rohan Kapoor', 'relation': 'Son', 'phone': '', 'age': '7', 'occupation': 'Student', 'isBeneficiary': true},
+{'name': 'Ramesh Kapoor', 'relation': 'Father', 'phone': '+91 99887 22222', 'age': '62', 'occupation': 'Retired', 'influenceLevel': '3'},
+],
+'createdAt': DateTime.now().subtract(const Duration(days: 2, hours: 1, minutes: 15)),
+},
 { 'id': 'default-1',
 'name': 'Rahul Mehta',
 'phone': '+91 98765 43210',
@@ -80,7 +213,6 @@ final List<Map<String, dynamic>> globalLeadMaps = [
 'keyCompetitors': 'Infosys, Wipro, HCL',
 'technologiesUsed': 'AWS, React, Flutter, Python',
 // ── Step 3: Lead Details ── 'pipelineStage': 'Qualified',
-'source': 'LinkedIn',
 'campaign': 'Q3 Enterprise Drive',
 'utmSource': 'linkedin',
 'utmMedium': 'paid',
@@ -129,36 +261,7 @@ final List<Map<String, dynamic>> globalLeadMaps = [
 'telegram': '@rahulmehta_tg',
 'preferredMeetingTool': 'Google Meet',
 'calendlyLink': 'calendly.com/rahulmehta',
-// ── Step 6: Notes (stored separately, not in overview) ──
-// notes intentionally NOT stored here — stored in _notes list in detail screen
-// ── Step 7: Interests ──
-'interests': [ 'Life Insurance',
-'Health Cover',
-'Motor Insurance',
-'Home Insurance',
-'Travel Insurance',
-'Real Estate',
-'Education Plan',
-'Software/IT',
-'Healthcare',
-'Automotive',
-'Financial Services',
-'Retail',
-'Hospitality',
-'Consulting',
-'Agriculture',
-'Mutual Funds',
-'Equity',
-'Fixed Deposits',
-'TPD Insurance',
-'Income Protection',
-'Trauma/Critical Illness',
-'Superannuation',
-'Personal Loan',
-'Home Loan',
-'SIP',
-'Tax Planning',
-],
+// ── Step 6: Notes (stored separately, not in overview) ── // notes intentionally NOT stored here — stored in _notes list in detail screen // ── Step 7: Interests ── 'interests': [ 'Life Insurance', 'Health Cover', 'Motor Insurance', 'Home Insurance', 'Travel Insurance', 'Real Estate', 'Education Plan', 'Software/IT', 'Healthcare', 'Automotive', 'Financial Services', 'Retail', 'Hospitality', 'Consulting', 'Agriculture', 'Mutual Funds', 'Equity', 'Fixed Deposits', 'TPD Insurance', 'Income Protection', 'Trauma/Critical Illness', 'Superannuation', 'Personal Loan', 'Home Loan', 'SIP', 'Tax Planning', ],
 'interest_Life Insurance': {'priority': 'High', 'readiness': 'Ready to Buy', 'coverAmount': '₹1 Crore', 'premiumFrequency': 'Annual', 'estimatedPremium': '₹25,000/yr', 'kyc': 'Verified', 'closingProbability': '85%', 'paymentMode': 'UPI', 'interestStatus': 'Quoted'},
 'interest_Health Cover': {'priority': 'High', 'readiness': 'Comparing Options', 'coverAmount': '₹25 Lakh Family Floater', 'premiumFrequency': 'Annual', 'estimatedPremium': '₹18,000/yr', 'kyc': 'Submitted', 'closingProbability': '70%', 'interestStatus': 'Negotiation'},
 'interest_Motor Insurance': {'priority': 'Medium', 'readiness': 'Renewal Due', 'vehicle': 'Honda City 2022', 'premiumFrequency': 'Annual', 'estimatedPremium': '₹12,000/yr', 'kyc': 'Verified', 'interestStatus': 'Exploring'},
@@ -172,6 +275,8 @@ final List<Map<String, dynamic>> globalLeadMaps = [
 'interest_TPD Insurance': {'priority': 'Medium', 'readiness': 'Exploring', 'coverAmount': '₹50 Lakh', 'estimatedPremium': '₹15,000/yr', 'interestStatus': 'Exploring'},
 'interest_Income Protection': {'priority': 'High', 'readiness': 'Ready to Buy', 'coverAmount': '75% of income', 'estimatedPremium': '₹20,000/yr', 'interestStatus': 'Quoted'},
 'interest_SIP': {'priority': 'High', 'readiness': 'Active', 'investmentAmount': '₹25,000/month', 'riskProfile': 'Moderate', 'interestStatus': 'Won'},
+// ── Interest-specific Notes ── 'interest_notes_Life Insurance': 'Wants comprehensive term plan. Nominee is spouse Priya. Prefers HDFC Life. Budget ₹20K/yr.',
+'interest_notes_Health Cover': 'Family floater for 4. Needs maternity cover. Comparing Niva Bupa vs Star Health.',
 // ── Step 8: Relations ──
 'relations': [ {'name': 'Priya Mehta', 'relation': 'Spouse', 'phone': '+91 98765 11111', 'age': '35', 'occupation': 'Doctor', 'email': 'priya.mehta@gmail.com', 'gender': 'Female', 'isCoApplicant': true, 'isBeneficiary': true, 'influenceLevel': '4', 'annualIncome': '₹12,00,000'},
 {'name': 'Arjun Mehta', 'relation': 'Son', 'phone': '', 'age': '5', 'occupation': 'Student', 'isBeneficiary': true},
@@ -185,7 +290,7 @@ final List<Map<String, dynamic>> globalLeadMaps = [
 'email': 'sneha.k@financeplus.com',
 'company': 'FinancePlus Ltd',
 'industry': 'Finance',
-'status': 'In Progress',
+'status': 'Engaged',
 'priority': 'Medium',
 'score': 65,
 'dealValue': 280000.0,
@@ -215,7 +320,7 @@ final List<Map<String, dynamic>> globalLeadMaps = [
 'email': 'vikram@healthbridge.org',
 'company': 'HealthBridge',
 'industry': 'Healthcare',
-'status': 'Proposal',
+'status': 'Proposed',
 'priority': 'High',
 'score': 74,
 'dealValue': 620000.0,
@@ -246,7 +351,7 @@ final List<Map<String, dynamic>> globalLeadMaps = [
 'email': 'anita.desai@retailhub.in',
 'company': 'RetailHub India',
 'industry': 'Retail',
-'status': 'Won',
+'status': 'Result',
 'priority': 'Low',
 'score': 91,
 'dealValue': 175000.0,
@@ -332,6 +437,10 @@ final List<Map<String, dynamic>> globalLeadMaps = [
 'expectedCloseDate': '${DateTime.now().add(const Duration(days: 15)).day}/${DateTime.now().add(const Duration(days: 15)).month}/${DateTime.now().add(const Duration(days: 15)).year}',
 },
 ];
+
+// Backward-compat aliases used by sessions_screen, follow_ups_screen, templates_screen
+List<Map<String, dynamic>> get globalLeads => globalLeadMaps;
+List<Map<String, dynamic>> get dummyLeads => globalLeadMaps;
 
 // Notifier: call this after inserting/updating a lead to refresh the list
 VoidCallback? onLeadsChanged;
@@ -424,7 +533,7 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
     final companies = ['Infosys Ltd', 'Wipro Technologies', 'HCL Systems', 'Tata Consultancy', 'Reliance Industries', 'HDFC Bank', 'ICICI Securities', 'Bajaj Finance', 'Mahindra Group', 'Adani Enterprises'];
     final cities = ['Bangalore', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad', 'Pune', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Kochi'];
     final states = ['Karnataka', 'Maharashtra', 'Delhi', 'Tamil Nadu', 'Telangana', 'Maharashtra', 'West Bengal', 'Gujarat', 'Rajasthan', 'Kerala'];
-    final statuses = ['New', 'Contacted', 'Proposed', 'Qualified', 'Negotiations'];
+    final statuses = ['New', 'Contacted', 'Engaged', 'Qualified', 'Proposed', 'Follow Up', 'Sessions', 'Negotiations'];
     final priorities = ['High', 'Medium', 'Low'];
     final sources = ['LinkedIn', 'Referral', 'Cold Call', 'Trade Show', 'Website', 'Partner'];
     final actions = ['Appointment', 'Follow-up', 'Video Call', 'Call Back'];
@@ -541,8 +650,21 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
 
   List<LeadModel> get _filteredLeads {
     List<LeadModel> result = _leads.where((lead) {
-      final matchesFilter =
-          _selectedFilter == 'All' || lead.status == _selectedFilter;
+      bool matchesFilter;
+      if (_selectedFilter == 'All') {
+        matchesFilter = true;
+      } else if (_selectedFilter == 'Won') {
+        // Match leads with status 'Won' or resultOutcome 'Won'
+        final map = globalLeadMaps.firstWhere((m) => m['id'] == lead.id, orElse: () => {});
+        matchesFilter = lead.status == 'Won' ||
+            (map['resultOutcome'] as String? ?? '') == 'Won';
+      } else if (_selectedFilter == 'Lost') {
+        final map = globalLeadMaps.firstWhere((m) => m['id'] == lead.id, orElse: () => {});
+        matchesFilter = lead.status == 'Lost' ||
+            (map['resultOutcome'] as String? ?? '') == 'Lost';
+      } else {
+        matchesFilter = lead.status == _selectedFilter;
+      }
       final matchesSearch =
           _searchQuery.isEmpty ||
           lead.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -983,19 +1105,82 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
                         ),
                       ),
                     )
-                  : SliverPadding(
-                      padding: const EdgeInsets.only(bottom: 100),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => LeadCardWidget(lead: _filteredLeads[index], index: index, onRemove: () => removeLead(_filteredLeads[index].id)),
-                          childCount: _filteredLeads.length,
-                        ),
-                      ),
-                    ),
+                  : _buildGroupedLeadList(_filteredLeads),
           ],
         ),
       ),
     );
+  }
+
+  // ─── Grouped list with date section headers (descending) ─────────────────
+  Widget _buildGroupedLeadList(List<LeadModel> leads) {
+    // Group leads by date (descending)
+    final Map<String, List<LeadModel>> grouped = {};
+    for (final lead in leads) {
+      final map = globalLeadMaps.firstWhere((m) => m['id'] == lead.id, orElse: () => {});
+      final createdAt = map['createdAt'] as DateTime?;
+      final key = createdAt != null ? _dateGroupKey(createdAt) : 'Unknown';
+      grouped.putIfAbsent(key, () => []).add(lead);
+    }
+    // Sort keys descending by date
+    final sortedKeys = grouped.keys.toList()
+      ..sort((a, b) {
+        final da = _keyToDate(a);
+        final db = _keyToDate(b);
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return db.compareTo(da);
+      });
+
+    // Build sliver list items
+    final items = <Widget>[];
+    for (final key in sortedKeys) {
+      items.add(_DateSectionHeader(label: key));
+      final groupLeads = grouped[key]!;
+      for (int i = 0; i < groupLeads.length; i++) {
+        items.add(LeadCardWidget(
+          lead: groupLeads[i],
+          index: i,
+          onRemove: () => removeLead(groupLeads[i].id),
+        ));
+      }
+    }
+    items.add(const SizedBox(height: 100));
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) => items[index],
+        childCount: items.length,
+      ),
+    );
+  }
+
+  String _dateGroupKey(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final date = DateTime(dt.year, dt.month, dt.day);
+    final diff = today.difference(date).inDays;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final dateStr = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    if (diff == 0) return 'Today · $dateStr';
+    if (diff == 1) return 'Yesterday · $dateStr';
+    if (diff < 0) return 'Upcoming · $dateStr';
+    return dateStr;
+  }
+
+  DateTime? _keyToDate(String key) {
+    try {
+      final parts = key.split('·').last.trim().split(' ');
+      if (parts.length < 3) return null;
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final day = int.tryParse(parts[0]) ?? 1;
+      final month = months.indexOf(parts[1]) + 1;
+      final year = int.tryParse(parts[2]) ?? 2026;
+      return DateTime(year, month, day);
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget _buildKpiSkeleton() {
@@ -1007,6 +1192,41 @@ class _LeadsListScreenState extends State<LeadsListScreen> {
         itemCount: 4,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, __) => const LoadingSkeletonWidget(width: 120, height: 86, borderRadius: 16),
+      ),
+    );
+  }
+}
+
+// ─── Date Section Header ──────────────────────────────────────────────────────
+
+class _DateSectionHeader extends StatelessWidget {
+  final String label;
+  const _DateSectionHeader({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryContainer,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Divider(color: AppTheme.surface200, height: 1)),
+        ],
       ),
     );
   }

@@ -517,7 +517,7 @@ class _SectionNotesWidgetState extends State<SectionNotesWidget>
         ],
         const SizedBox(height: 12),
 
-        // Action row
+        // Action row — no Save Note button; note is saved with lead creation
         Row(
           children: [
             // Voice input
@@ -623,26 +623,32 @@ class _SectionNotesWidgetState extends State<SectionNotesWidget>
               ),
             ),
             const Spacer(),
-            ElevatedButton.icon(
-              onPressed: _saveNote,
-              icon: const Icon(Icons.save_rounded, size: 16),
-              label: Text(
-                'Save Note',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+            // Info chip: notes saved with lead
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.success.withAlpha(20),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.success.withAlpha(60)),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 13,
+                    color: AppTheme.success,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Saved with lead',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.success,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

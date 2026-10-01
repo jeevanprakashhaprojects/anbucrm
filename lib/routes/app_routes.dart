@@ -28,6 +28,9 @@ import '../presentation/welcome_screen/welcome_screen.dart';
 import '../presentation/templates_screen/templates_screen.dart';
 import '../presentation/video_session_screen/video_session_screen.dart';
 import '../widgets/app_scaffold.dart';
+import '../presentation/important_dates_screen/important_dates_screen.dart';
+import '../presentation/assign_leads_screen/assign_leads_screen.dart';
+import '../presentation/assigned_tasks_screen/assigned_tasks_screen.dart';
 
 class AppRoutes {
   static const String initial = '/';
@@ -61,6 +64,9 @@ class AppRoutes {
   static const String employeesScreen = '/employees-screen';
   static const String templatesScreen = '/templates-screen';
   static const String videoSessionScreen = '/video-session-screen';
+  static const String importantDatesScreen = '/important-dates-screen';
+  static const String assignLeadsScreen = '/assign-leads-screen';
+  static const String assignedTasksScreen = '/assigned-tasks-screen';
 }
 
 final GoRouter appRouter = GoRouter(
@@ -473,6 +479,60 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => CustomTransitionPage(
         key: state.pageKey,
         child: const TemplatesScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final slide =
+              Tween<Offset>(
+                begin: const Offset(1.0, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+          return SlideTransition(position: slide, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 320),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.importantDatesScreen,
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const ImportantDatesScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final slide =
+              Tween<Offset>(
+                begin: const Offset(1.0, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+          return SlideTransition(position: slide, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 320),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.assignLeadsScreen,
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const AssignLeadsScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final slide =
+              Tween<Offset>(
+                begin: const Offset(1.0, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+          return SlideTransition(position: slide, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 320),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.assignedTasksScreen,
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        child: const AssignedTasksScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final slide =
               Tween<Offset>(

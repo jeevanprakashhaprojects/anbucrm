@@ -2742,8 +2742,13 @@ class _InterestMetaSectionState extends State<_InterestMetaSection> {
 
 class _InterestCardWithNotes extends StatefulWidget {
   final String industry;
+  final void Function(String industry, String notes)? onNotesChanged;
 
-  const _InterestCardWithNotes({super.key, required this.industry});
+  const _InterestCardWithNotes({
+    super.key,
+    required this.industry,
+    this.onNotesChanged,
+  });
 
   @override
   State<_InterestCardWithNotes> createState() => _InterestCardWithNotesState();
@@ -2799,6 +2804,9 @@ class _InterestCardWithNotesState extends State<_InterestCardWithNotes> {
                 controller: _notesCtrl,
                 maxLines: 3,
                 textCapitalization: TextCapitalization.sentences,
+                onChanged: (val) {
+                  widget.onNotesChanged?.call(widget.industry, val);
+                },
                 decoration: InputDecoration(
                   hintText:
                       'Add notes specific to this ${widget.industry} interest...',

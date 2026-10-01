@@ -86,17 +86,22 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
   static const _statuses = [
     'New',
     'Contacted',
-    'Proposed',
+    'Engaged',
     'Qualified',
+    'Proposed',
+    'Follow Up',
+    'Sessions',
     'Negotiations',
     'Result',
   ];
   static const _statusSubStates = {
     'Contacted': ['Voicemail', 'No Answer', 'Callback Requested', 'Connected'],
+    'Engaged': ['Responded', 'Interested', 'Needs More Info'],
     'Proposed': ['Proposal Sent', 'Under Review', 'Revision Requested'],
     'Qualified': ['BANT Qualified', 'Partially Qualified', 'Needs Nurturing'],
+    'Follow Up': ['Waiting for Decision', 'Follow-up Scheduled', 'No Response'],
+    'Sessions': ['Appointment Scheduled', 'Video Call Booked', 'Call Back Set'],
     'Negotiations': ['Price Negotiation', 'Contract Review', 'Legal Review'],
-    'Result': ['Won', 'Lost', 'No Decision', 'Deferred'],
   };
   static const _wonLostReasons = [
     'Price too high',
@@ -163,6 +168,7 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
   String _selectedPriority = 'Medium';
   String _selectedTier = 'Standard';
   bool _isVip = false;
+  bool _isExistingCustomer = false;
   String _selectedSource = '';
   String _selectedAction = '';
   String _selectedForecastCategory = '';
@@ -170,7 +176,9 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
   String _selectedCurrency = '₹ INR';
   String _selectedContractLength = '';
   String _selectedRenewalFrequency = '';
-  String _selectedWonLostReason = '';
+  final String _selectedWonLostReason = '';
+  String _selectedResultOutcome = ''; // 'Won', 'Lost', 'Not Interested'
+  String _resultReason = '';
   final String _selectedCompetitor = '';
   String _selectedNextBestAction = '';
   double _dealValue = 0;
@@ -182,6 +190,9 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
   final _utmCtrl = TextEditingController();
   final _referralCtrl = TextEditingController();
   final _actionNotesCtrl = TextEditingController();
+  final _appointmentLocationCtrl = TextEditingController();
+  final _appointmentLinkCtrl = TextEditingController();
+  final _resultReasonCtrl = TextEditingController();
   final _quotationIdCtrl = TextEditingController();
   final _discountReasonCtrl = TextEditingController();
   final _slaCtrl = TextEditingController();
@@ -269,7 +280,7 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
 
   final _otherSourceCtrl = TextEditingController();
   String _otherSourceText = '';
-  String _otherWonLostReason = '';
+  final String _otherWonLostReason = '';
   String _otherCurrency = '';
   String _otherRenewalFrequency = '';
   String _otherNextBestAction = '';
@@ -338,6 +349,8 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
           ? '${_scheduledActionTime!.hour.toString().padLeft(2, '0')}:${_scheduledActionTime!.minute.toString().padLeft(2, '0')}'
           : '',
       'scheduledFrequency': _selectedFrequency,
+      'appointmentLocation': _appointmentLocationCtrl.text,
+      'appointmentLink': _appointmentLinkCtrl.text,
       'preferredContact': _selectedPreferredContact,
       'actionNotes': _actionNotesCtrl.text,
       'ownerName': _selectedOwner.name,
@@ -345,6 +358,9 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
       'priority': _selectedPriority,
       'status': _selectedStatus,
       'statusSubState': _selectedSubState,
+      'isExistingCustomer': _isExistingCustomer,
+      'resultOutcome': _selectedResultOutcome,
+      'resultReason': _resultReasonCtrl.text,
       'tier': _selectedTier == 'Others' ? _otherTier : _selectedTier,
       'source': _selectedSource == 'Others'
           ? _otherSourceText
@@ -397,6 +413,9 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
     _utmCtrl.dispose();
     _referralCtrl.dispose();
     _actionNotesCtrl.dispose();
+    _appointmentLocationCtrl.dispose();
+    _appointmentLinkCtrl.dispose();
+    _resultReasonCtrl.dispose();
     _otherSourceCtrl.dispose();
     _quotationIdCtrl.dispose();
     _discountReasonCtrl.dispose();
@@ -414,6 +433,8 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildPipelineBar(),
+        const SizedBox(height: 16),
+        _buildExistingCustomerToggle(),
         const SizedBox(height: 16),
         _buildLeadScoreSection(),
         const SizedBox(height: 16),
@@ -444,90 +465,189 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
     );
   }
 
+  Widget _buildExistingCustomerToggle() {
+    return GestureDetector(
+      onTap: () => setState(() {
+        _isExistingCustomer = !_isExistingCustomer;
+        _notifyParent();
+      }),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: _isExistingCustomer
+              ? AppTheme.success.withAlpha(20)
+              : AppTheme.surface100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _isExistingCustomer
+                ? AppTheme.success.withAlpha(120)
+                : AppTheme.surface200,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              _isExistingCustomer
+                  ? Icons.verified_user_rounded
+                  : Icons.person_outline_rounded,
+              size: 18,
+              color: _isExistingCustomer
+                  ? AppTheme.success
+                  : AppTheme.textMuted,
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Existing Customer',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _isExistingCustomer
+                        ? AppTheme.success
+                        : AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  _isExistingCustomer
+                      ? 'Yes — this is an existing customer'
+                      : 'No — this is a new lead',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: _isExistingCustomer
+                        ? AppTheme.success
+                        : AppTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Switch(
+              value: _isExistingCustomer,
+              onChanged: (v) => setState(() {
+                _isExistingCustomer = v;
+                _notifyParent();
+              }),
+              activeThumbColor: AppTheme.success,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPipelineBar() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Pipeline Stage',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 14),
-        ClipRect(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 6, bottom: 4),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  children: List.generate(_statuses.length, (i) {
-                    final status = _statuses[i];
-                    final isActive = _selectedStatus == status;
-                    final color = AppTheme.leadStatusColor(status);
-                    final isPast = _statuses.indexOf(_selectedStatus) > i;
-                    return Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => setState(() {
-                            _selectedStatus = status;
-                            _selectedSubState = '';
-                            _notifyParent();
-                          }),
-                          child: Column(
-                            children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                width: isActive ? 16 : 10,
-                                height: isActive ? 16 : 10,
-                                decoration: BoxDecoration(
-                                  color: isPast || isActive
-                                      ? color
-                                      : AppTheme.surface200,
-                                  shape: BoxShape.circle,
-                                  boxShadow: isActive
-                                      ? [
-                                          BoxShadow(
-                                            color: color.withAlpha(128),
-                                            blurRadius: 10,
-                                            spreadRadius: 3,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                status,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 9,
-                                  fontWeight: isActive
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                  color: isActive ? color : AppTheme.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (i < _statuses.length - 1)
-                          Container(
-                            width: 28,
-                            height: 2,
-                            margin: const EdgeInsets.only(bottom: 16),
-                            color: isPast ? color : AppTheme.surface200,
-                          ),
-                      ],
-                    );
-                  }),
-                ),
+        Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withAlpha(20),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.account_tree_outlined,
+                size: 16,
+                color: AppTheme.primary,
               ),
             ),
+            const SizedBox(width: 8),
+            Text(
+              'Pipeline Stage',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Progress bars row
+              Row(
+                children: List.generate(_statuses.length, (i) {
+                  final status = _statuses[i];
+                  final currentIndex = _statuses.indexOf(_selectedStatus);
+                  final isPast = i < currentIndex;
+                  final isCurrent = i == currentIndex;
+                  final color = AppTheme.leadStatusColor(status);
+                  return Container(
+                    width: 52,
+                    height: 7,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      color: isPast || isCurrent ? color : AppTheme.surface200,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 8),
+              // Labels row — tappable
+              Row(
+                children: List.generate(_statuses.length, (i) {
+                  final status = _statuses[i];
+                  final isActive = _selectedStatus == status;
+                  final currentIndex = _statuses.indexOf(_selectedStatus);
+                  final isPast = i < currentIndex;
+                  final color = AppTheme.leadStatusColor(status);
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedStatus = status;
+                      _selectedSubState = '';
+                      _notifyParent();
+                    }),
+                    child: Container(
+                      width: 56,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 4,
+                      ),
+                      decoration: isActive
+                          ? BoxDecoration(
+                              color: color.withAlpha(20),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: color.withAlpha(120),
+                                width: 1.5,
+                              ),
+                            )
+                          : null,
+                      child: Text(
+                        status,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 9,
+                          fontWeight: isActive
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                          color: isActive
+                              ? color
+                              : isPast
+                              ? AppTheme.textSecondary
+                              : AppTheme.textMuted,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
           ),
         ),
         // Sub-state
@@ -579,7 +699,7 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
         // Won/Lost Result section
         if (_selectedStatus == 'Result') ...[
           const SizedBox(height: 12),
-          // Won / Lost dropdown
+          // Result dropdown: Won, Lost, Not Interested
           InputDecorator(
             decoration: const InputDecoration(
               labelText: 'Result *',
@@ -590,14 +710,11 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: _selectedWonLostReason.isEmpty
+                value: _selectedResultOutcome.isEmpty
                     ? null
-                    : (_selectedWonLostReason == 'Won' ||
-                              _selectedWonLostReason == 'Lost'
-                          ? _selectedWonLostReason
-                          : null),
+                    : _selectedResultOutcome,
                 hint: Text(
-                  'Select Won or Lost',
+                  'Select result',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     color: AppTheme.textMuted,
@@ -605,7 +722,7 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                 ),
                 isExpanded: true,
                 isDense: true,
-                items: ['Won', 'Lost']
+                items: ['Won', 'Lost', 'Not Interested']
                     .map(
                       (r) => DropdownMenuItem(
                         value: r,
@@ -614,11 +731,15 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                             Icon(
                               r == 'Won'
                                   ? Icons.emoji_events_rounded
-                                  : Icons.cancel_rounded,
+                                  : r == 'Lost'
+                                  ? Icons.cancel_rounded
+                                  : Icons.do_not_disturb_alt_rounded,
                               size: 16,
                               color: r == 'Won'
                                   ? AppTheme.success
-                                  : AppTheme.error,
+                                  : r == 'Lost'
+                                  ? AppTheme.error
+                                  : AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -628,7 +749,9 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                                 fontWeight: FontWeight.w600,
                                 color: r == 'Won'
                                     ? AppTheme.success
-                                    : AppTheme.error,
+                                    : r == 'Lost'
+                                    ? AppTheme.error
+                                    : AppTheme.textSecondary,
                               ),
                             ),
                           ],
@@ -637,55 +760,42 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                     )
                     .toList(),
                 onChanged: (v) => setState(() {
-                  _selectedWonLostReason = v ?? '';
+                  _selectedResultOutcome = v ?? '';
+                  _resultReasonCtrl.clear();
                   _notifyParent();
                 }),
                 icon: const Icon(Icons.expand_more_rounded, size: 16),
               ),
             ),
           ),
-          if (_selectedWonLostReason == 'Won') ...[
+          if (_selectedResultOutcome.isNotEmpty) ...[
             const SizedBox(height: 10),
             TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'Won Reason *',
-                hintText: 'Why was this deal won?',
+              controller: _resultReasonCtrl,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'Reason for $_selectedResultOutcome *',
+                hintText: _selectedResultOutcome == 'Won'
+                    ? 'Why was this deal won?'
+                    : _selectedResultOutcome == 'Lost'
+                    ? 'Why was this deal lost?'
+                    : 'Why is the customer not interested?',
                 prefixIcon: Icon(
-                  Icons.emoji_events_rounded,
+                  _selectedResultOutcome == 'Won'
+                      ? Icons.emoji_events_rounded
+                      : _selectedResultOutcome == 'Lost'
+                      ? Icons.cancel_rounded
+                      : Icons.do_not_disturb_alt_rounded,
                   size: 18,
-                  color: AppTheme.success,
+                  color: _selectedResultOutcome == 'Won'
+                      ? AppTheme.success
+                      : _selectedResultOutcome == 'Lost'
+                      ? AppTheme.error
+                      : AppTheme.textSecondary,
                 ),
               ),
-              validator: (v) =>
-                  _selectedWonLostReason == 'Won' &&
-                      (v == null || v.trim().isEmpty)
-                  ? 'Won reason is required'
-                  : null,
               onChanged: (v) => setState(() {
-                _otherWonLostReason = v;
-                _notifyParent();
-              }),
-            ),
-          ],
-          if (_selectedWonLostReason == 'Lost') ...[
-            const SizedBox(height: 10),
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'Lost Reason *',
-                hintText: 'Why was this deal lost?',
-                prefixIcon: Icon(
-                  Icons.cancel_rounded,
-                  size: 18,
-                  color: AppTheme.error,
-                ),
-              ),
-              validator: (v) =>
-                  _selectedWonLostReason == 'Lost' &&
-                      (v == null || v.trim().isEmpty)
-                  ? 'Lost reason is required'
-                  : null,
-              onChanged: (v) => setState(() {
-                _otherWonLostReason = v;
+                _resultReason = v;
                 _notifyParent();
               }),
             ),
@@ -1473,6 +1583,10 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                   _selectedAction = a;
                   _selectedFrequency = '';
                   _customFrequencyDate = null;
+                  _scheduledActionDate = null;
+                  _scheduledActionTime = null;
+                  _appointmentLocationCtrl.clear();
+                  _appointmentLinkCtrl.clear();
                   _notifyParent();
                 }),
                 child: AnimatedContainer(
@@ -1505,9 +1619,175 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
               );
             }).toList(),
           ),
-          // Frequency dropdown — only shown when action is not "Not Interested"
+
+          // ── APPOINTMENT: custom date/time + optional address fields ──
+          if (_selectedAction == 'Appointment') ...[
+            const SizedBox(height: 14),
+            Text(
+              'Appointment Date & Time *',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate:
+                            _scheduledActionDate ??
+                            DateTime.now().add(const Duration(days: 1)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 1825),
+                        ),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _scheduledActionDate = picked;
+                          _notifyParent();
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceVariantLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _scheduledActionDate == null
+                              ? AppTheme.error.withAlpha(80)
+                              : AppTheme.primary.withAlpha(80),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 16,
+                            color: _scheduledActionDate == null
+                                ? AppTheme.error
+                                : AppTheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _scheduledActionDate != null
+                                ? '${_scheduledActionDate!.day}/${_scheduledActionDate!.month}/${_scheduledActionDate!.year}'
+                                : 'Select Date *',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: _scheduledActionDate == null
+                                  ? AppTheme.error
+                                  : AppTheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: _scheduledActionTime ?? TimeOfDay.now(),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          _scheduledActionTime = picked;
+                          _notifyParent();
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceVariantLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _scheduledActionTime == null
+                              ? AppTheme.error.withAlpha(80)
+                              : AppTheme.primary.withAlpha(80),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 16,
+                            color: _scheduledActionTime == null
+                                ? AppTheme.error
+                                : AppTheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _scheduledActionTime != null
+                                ? _scheduledActionTime!.format(context)
+                                : 'Select Time *',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: _scheduledActionTime == null
+                                  ? AppTheme.error
+                                  : AppTheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _actionNotesCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Action Notes',
+                hintText: 'Add notes for this appointment...',
+                prefixIcon: Icon(Icons.notes_rounded, size: 18),
+              ),
+              onChanged: (_) => _notifyParent(),
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _appointmentLocationCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Address / Location (Optional)',
+                hintText: 'e.g. Client Office, 42 MG Road, Bangalore',
+                prefixIcon: Icon(Icons.location_on_outlined, size: 18),
+              ),
+              onChanged: (_) => _notifyParent(),
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _appointmentLinkCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Address Link (Optional)',
+                hintText: 'e.g. https://maps.google.com/...',
+                prefixIcon: Icon(Icons.map_outlined, size: 18),
+              ),
+              onChanged: (_) => _notifyParent(),
+            ),
+          ],
+
+          // ── OTHER ACTIONS (Follow-up, Video Call, Call Back): frequency + time ──
           if (_selectedAction.isNotEmpty &&
-              _selectedAction != 'Not Interested') ...[
+              _selectedAction != 'Not Interested' &&
+              _selectedAction != 'Appointment') ...[
             const SizedBox(height: 14),
             Text(
               'Follow-up Frequency *',
@@ -1552,7 +1832,6 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                     setState(() {
                       _selectedFrequency = v ?? '';
                       _customFrequencyDate = null;
-                      // Auto-set date for non-custom frequencies
                       if (v == 'Daily') {
                         _scheduledActionDate = DateTime.now().add(
                           const Duration(days: 1),
@@ -1585,8 +1864,9 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
             ),
             if (_selectedFrequency.isNotEmpty) ...[
               const SizedBox(height: 10),
-              // Show date — editable only for Custom and Yearly
-              if (_selectedFrequency == 'Daily') ...[
+              if (_selectedFrequency == 'Daily' ||
+                  _selectedFrequency == 'Weekly' ||
+                  _selectedFrequency == 'Monthly') ...[
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -1608,7 +1888,7 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                       Text(
                         _scheduledActionDate != null
                             ? '${_scheduledActionDate!.day}/${_scheduledActionDate!.month}/${_scheduledActionDate!.year} (Auto-set)'
-                            : 'Tomorrow (auto)',
+                            : 'Auto-set',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           color: AppTheme.textSecondary,
@@ -1635,168 +1915,14 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                     ],
                   ),
                 ),
-              ] else if (_selectedFrequency == 'Weekly') ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceVariantLight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.surface200),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_outlined,
-                        size: 16,
-                        color: AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _scheduledActionDate != null
-                            ? '${_scheduledActionDate!.day}/${_scheduledActionDate!.month}/${_scheduledActionDate!.year} (Auto-set)'
-                            : 'Next week (auto)',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface200,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'Auto',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            color: AppTheme.textMuted,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else if (_selectedFrequency == 'Monthly') ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceVariantLight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.surface200),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_outlined,
-                        size: 16,
-                        color: AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _scheduledActionDate != null
-                            ? '${_scheduledActionDate!.day}/${_scheduledActionDate!.month}/${_scheduledActionDate!.year} (Auto-set)'
-                            : 'Next month (auto)',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface200,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'Auto',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10,
-                            color: AppTheme.textMuted,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else if (_selectedFrequency == 'Yearly') ...[
-                // Yearly: date is auto-set to 1 year ahead but user can edit it
+              ] else if (_selectedFrequency == 'Yearly' ||
+                  _selectedFrequency == 'Custom') ...[
                 GestureDetector(
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
                       initialDate:
                           _scheduledActionDate ??
-                          DateTime.now().add(const Duration(days: 365)),
-                      firstDate: DateTime.now().add(const Duration(days: 1)),
-                      lastDate: DateTime.now().add(const Duration(days: 730)),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _scheduledActionDate = picked;
-                        _notifyParent();
-                      });
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceVariantLight,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.primary.withAlpha(80)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 16,
-                          color: AppTheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _scheduledActionDate != null
-                              ? '${_scheduledActionDate!.day}/${_scheduledActionDate!.month}/${_scheduledActionDate!.year}'
-                              : 'Select date (1 year ahead)',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: AppTheme.primary,
-                          ),
-                        ),
-                        const Spacer(),
-                        const Icon(
-                          Icons.edit_outlined,
-                          size: 14,
-                          color: AppTheme.primary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ] else if (_selectedFrequency == 'Custom') ...[
-                // Custom: user picks any future date
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          _customFrequencyDate ??
                           DateTime.now().add(const Duration(days: 1)),
                       firstDate: DateTime.now().add(const Duration(days: 1)),
                       lastDate: DateTime.now().add(const Duration(days: 1825)),
@@ -1818,7 +1944,7 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                       color: AppTheme.surfaceVariantLight,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: _customFrequencyDate == null
+                        color: _scheduledActionDate == null
                             ? AppTheme.error.withAlpha(80)
                             : AppTheme.primary.withAlpha(80),
                       ),
@@ -1828,18 +1954,18 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                         Icon(
                           Icons.calendar_today_outlined,
                           size: 16,
-                          color: _customFrequencyDate == null
+                          color: _scheduledActionDate == null
                               ? AppTheme.error
                               : AppTheme.primary,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _customFrequencyDate != null
-                              ? '${_customFrequencyDate!.day}/${_customFrequencyDate!.month}/${_customFrequencyDate!.year}'
-                              : 'Select custom date *',
+                          _scheduledActionDate != null
+                              ? '${_scheduledActionDate!.day}/${_scheduledActionDate!.month}/${_scheduledActionDate!.year}'
+                              : 'Select date *',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12,
-                            color: _customFrequencyDate == null
+                            color: _scheduledActionDate == null
                                 ? AppTheme.error
                                 : AppTheme.primary,
                           ),
@@ -1856,7 +1982,6 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                 ),
               ],
               const SizedBox(height: 10),
-              // Time picker
               GestureDetector(
                 onTap: () async {
                   final picked = await showTimePicker(
@@ -1890,7 +2015,7 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
                       const SizedBox(width: 8),
                       Text(
                         _scheduledActionTime != null
-                            ? '${_scheduledActionTime!.hour.toString().padLeft(2, '0')}:${_scheduledActionTime!.minute.toString().padLeft(2, '0')}'
+                            ? _scheduledActionTime!.format(context)
                             : 'Select Time *',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
@@ -1905,17 +2030,22 @@ class _SectionLeadDetailsWidgetState extends State<SectionLeadDetailsWidget>
               ),
             ],
           ],
+
           const SizedBox(height: 10),
-          TextFormField(
-            controller: _actionNotesCtrl,
-            maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Action Notes',
-              hintText: 'Add notes for this action...',
+          if (_selectedAction.isNotEmpty &&
+              _selectedAction != 'Appointment') ...[
+            TextFormField(
+              controller: _actionNotesCtrl,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Action Notes',
+                hintText: 'Add notes for this action...',
+              ),
+              onChanged: (_) => _notifyParent(),
             ),
-            onChanged: (_) => _notifyParent(),
-          ),
-          // Preferred Mode of Contact — compulsory when Follow-up is selected
+          ],
+
+          // Preferred Mode of Contact — for Follow-up
           if (_selectedAction == 'Follow-up') ...[
             const SizedBox(height: 14),
             Row(
@@ -2831,15 +2961,31 @@ class _OwnerPickerSheetState extends State<_OwnerPickerSheet> {
   String _query = '';
 
   List<LeadOwner> get _filtered {
-    if (_query.isEmpty) return widget.owners.take(3).toList();
-    final q = _query.toLowerCase();
-    return widget.owners
-        .where(
-          (o) =>
-              o.name.toLowerCase().contains(q) ||
-              o.role.toLowerCase().contains(q),
-        )
-        .toList();
+    // Sort ascending by name
+    final sorted = List<LeadOwner>.from(widget.owners)
+      ..sort((a, b) => a.name.compareTo(b.name));
+
+    List<LeadOwner> result;
+    if (_query.isEmpty) {
+      result = sorted;
+    } else {
+      final q = _query.toLowerCase();
+      result = sorted
+          .where(
+            (o) =>
+                o.name.toLowerCase().contains(q) ||
+                o.role.toLowerCase().contains(q),
+          )
+          .toList();
+    }
+
+    // Move selected to top
+    final selectedIdx = result.indexWhere((o) => o.id == widget.selected.id);
+    if (selectedIdx > 0) {
+      final selected = result.removeAt(selectedIdx);
+      result.insert(0, selected);
+    }
+    return result;
   }
 
   Color _idColor(String id) {

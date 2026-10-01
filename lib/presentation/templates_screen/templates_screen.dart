@@ -523,9 +523,7 @@ class _TemplatesScreenState extends State<TemplatesScreen> {
         if (val != null && val.toString().isNotEmpty) {
           String replacement;
           if (val is List) {
-            replacement = (val).isNotEmpty
-                ? (val).first.toString()
-                : attr;
+            replacement = (val).isNotEmpty ? (val).first.toString() : attr;
           } else {
             replacement = val.toString();
           }
@@ -897,7 +895,7 @@ class _LeadSelectSheetState extends State<_LeadSelectSheet> {
 
   List<Map<String, dynamic>> get _filteredLeads {
     final q = _query.toLowerCase();
-    return leads_list.globalLeadMaps.where((m) {
+    return leads_list.dummyLeads.where((m) {
       final name = (m['name'] as String? ?? '').toLowerCase();
       final phone = (m['phone'] as String? ?? '').toLowerCase();
       return q.isEmpty || name.contains(q) || phone.contains(q);

@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../routes/app_routes.dart';
 import '../../theme/app_theme.dart';
-import '../leads_list_screen/leads_list_screen.dart' as leads_list;
 import '../follow_ups_screen/follow_ups_screen.dart' as fu_screen;
 import './widgets/section_address_widget.dart';
 import './widgets/section_company_info_widget.dart';
@@ -21,6 +20,8 @@ import './widgets/wizard_step_indicator_widget.dart';
 
 // Global callback for leads changes
 VoidCallback? onLeadsChanged;
+
+List<Map<String, dynamic>> globalLeadMaps = [];
 
 class AddLeadScreen extends StatefulWidget {
   /// If provided, this lead will be pre-filled for editing
@@ -327,30 +328,24 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       if (_isEditing) {
         // Update existing lead in global list
         final existingId = widget.editLead!['id'] as String;
-        final idx = leads_list.globalLeadMaps.indexWhere(
-          (m) => m['id'] == existingId,
-        );
+        final idx = globalLeadMaps.indexWhere((m) => m['id'] == existingId);
         if (idx >= 0) {
-          leads_list.globalLeadMaps[idx] = {
-            ...leads_list.globalLeadMaps[idx],
+          globalLeadMaps[idx] = {
+            ...globalLeadMaps[idx],
             'name': fullName.isNotEmpty
                 ? fullName
-                : leads_list.globalLeadMaps[idx]['name'],
-            'phone': phone.isNotEmpty
-                ? phone
-                : leads_list.globalLeadMaps[idx]['phone'],
-            'email': email.isNotEmpty
-                ? email
-                : leads_list.globalLeadMaps[idx]['email'],
+                : globalLeadMaps[idx]['name'],
+            'phone': phone.isNotEmpty ? phone : globalLeadMaps[idx]['phone'],
+            'email': email.isNotEmpty ? email : globalLeadMaps[idx]['email'],
             'company': company.isNotEmpty
                 ? company
-                : leads_list.globalLeadMaps[idx]['company'],
+                : globalLeadMaps[idx]['company'],
             'industry': industry.isNotEmpty
                 ? industry
-                : leads_list.globalLeadMaps[idx]['industry'],
+                : globalLeadMaps[idx]['industry'],
             'dealValue': dealValue > 0
                 ? dealValue
-                : leads_list.globalLeadMaps[idx]['dealValue'],
+                : globalLeadMaps[idx]['dealValue'],
             'priority': priority,
             'status': status,
             'ownerName': ownerName,
@@ -389,7 +384,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         // Get interests from form data and use as tags
         final interests = _formData['interests'] as List<dynamic>? ?? [];
         final interestTags = interests.map((e) => e.toString()).toList();
-        leads_list.globalLeadMaps.insert(0, {
+        globalLeadMaps.insert(0, {
           'id': newId,
           'name': fullName.isNotEmpty ? fullName : 'New Lead',
           'company': company.isNotEmpty ? company : '',

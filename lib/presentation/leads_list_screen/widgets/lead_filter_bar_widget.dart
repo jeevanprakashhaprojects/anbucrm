@@ -16,9 +16,12 @@ class LeadFilterBarWidget extends StatelessWidget {
     'All',
     'New',
     'Contacted',
+    'Engaged',
     'Qualified',
-    'Proposal',
-    'Negotiation',
+    'Proposed',
+    'Follow Up',
+    'Sessions',
+    'Negotiations',
     'Won',
     'Lost',
   ];
@@ -35,9 +38,16 @@ class LeadFilterBarWidget extends StatelessWidget {
         itemBuilder: (context, i) {
           final filter = _filters[i];
           final isSelected = selectedFilter == filter;
-          final color = filter == 'All'
-              ? AppTheme.primary
-              : AppTheme.leadStatusColor(filter);
+          Color color;
+          if (filter == 'All') {
+            color = AppTheme.primary;
+          } else if (filter == 'Won') {
+            color = AppTheme.success;
+          } else if (filter == 'Lost') {
+            color = AppTheme.error;
+          } else {
+            color = AppTheme.leadStatusColor(filter);
+          }
 
           return GestureDetector(
             onTap: () => onFilterChanged(filter),
@@ -61,13 +71,33 @@ class LeadFilterBarWidget extends StatelessWidget {
                       ]
                     : null,
               ),
-              child: Text(
-                filter,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : AppTheme.textSecondary,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (filter == 'Won') ...[
+                    const Icon(
+                      Icons.emoji_events_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 4),
+                  ] else if (filter == 'Lost') ...[
+                    const Icon(
+                      Icons.cancel_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(
+                    filter,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
           );

@@ -5,9 +5,13 @@ import '../../../widgets/status_badge_widget.dart';
 import '../leads_list_screen.dart' as leads_screen;
 import 'package:go_router/go_router.dart';
 import '../../../routes/app_routes.dart';
+import '../../follow_ups_screen/follow_ups_screen.dart' show globalFollowUpMaps;
+import '../../sessions_screen/sessions_screen.dart' show globalSessionMaps;
 
 // Global starred leads set — persists across screens
 final Set<String> globalStarredLeadIds = {};
+// Global lead maps — persists across screens
+final List<Map<String, dynamic>> globalLeadMaps = [];
 
 class LeadCardWidget extends StatefulWidget {
   final leads_screen.LeadModel lead;
@@ -75,13 +79,6 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
       } else {
         globalStarredLeadIds.add(widget.lead.id);
       }
-      // Also update the globalLeadMaps
-      final idx = leads_screen.globalLeadMaps.indexWhere(
-        (m) => m['id'] == widget.lead.id,
-      );
-      if (idx >= 0) {
-        leads_screen.globalLeadMaps[idx]['isStarred'] = !_isStarred;
-      }
     });
   }
 
@@ -133,7 +130,7 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
     return '$hour:$min $ampm';
   }
 
-  /// Format scheduled action date string "d/m/yyyy" + time "HH:mm" into readable form
+  /// Format scheduled action date string "d/m/yyyy" into readable form
   String _formatScheduledDate(String dateStr) {
     if (dateStr.isEmpty) return '';
     final parts = dateStr.split('/');
@@ -170,12 +167,39 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
     return '$h:$min $ampm';
   }
 
+  String _formatDateTime(DateTime dt) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final d = DateTime(dt.year, dt.month, dt.day);
+    final h = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    final timeStr = '$h:${dt.minute.toString().padLeft(2, '0')} $ampm';
+    if (d == today) return 'Today · $timeStr';
+    if (d == today.add(const Duration(days: 1))) return 'Tomorrow · $timeStr';
+    return '${dt.day} ${months[dt.month - 1]} · $timeStr';
+  }
+
   /// Icon for scheduled action
   IconData _actionIcon(String action) {
     switch (action.toLowerCase()) {
       case 'appointment':
         return Icons.calendar_today_rounded;
       case 'follow-up':
+      case 'follow up':
         return Icons.repeat_rounded;
       case 'video call':
         return Icons.videocam_outlined;
@@ -193,6 +217,7 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
       case 'appointment':
         return AppTheme.primary;
       case 'follow-up':
+      case 'follow up':
         return const Color(0xFF7C3AED);
       case 'video call':
         return const Color(0xFF0891B2);
@@ -205,6 +230,73 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
     }
   }
 
+  Color _ownerAvatarColor(String initials) {
+    const colors = [
+      Color(0xFF7C3AED),
+      Color(0xFF059669),
+      Color(0xFF0891B2),
+      Color(0xFFEC4899),
+      Color(0xFFF59E0B),
+      Color(0xFF6366F1),
+    ];
+    if (initials.isEmpty) return colors[0];
+    return colors[initials.codeUnitAt(0) % colors.length];
+  }
+
+  // ── Find active follow-up for this lead from globalFollowUpMaps ──
+  Map<String, dynamic>? _getActiveFollowUp(String leadId, String leadName) {
+    final now = DateTime.now();
+    // Try by ID first, then by name
+    final candidates = globalFollowUpMaps.where((f) {
+      if (f['status'] == 'Completed' || f['status'] == 'Cancelled') {
+        return false;
+      }
+      final fLeadId = (f['linkedLeadId'] as String?) ?? '';
+      final fLeadName = (f['linkedLead'] as String?) ?? '';
+      return (fLeadId.isNotEmpty && fLeadId == leadId) ||
+          (fLeadId.isEmpty &&
+              fLeadName.toLowerCase() == leadName.toLowerCase());
+    }).toList();
+    if (candidates.isEmpty) return null;
+    // Prefer upcoming ones, then overdue
+    candidates.sort((a, b) {
+      final aDate = a['dueDate'] as DateTime;
+      final bDate = b['dueDate'] as DateTime;
+      final aUpcoming = aDate.isAfter(now);
+      final bUpcoming = bDate.isAfter(now);
+      if (aUpcoming && !bUpcoming) return -1;
+      if (!aUpcoming && bUpcoming) return 1;
+      return aDate.compareTo(bDate);
+    });
+    return candidates.first;
+  }
+
+  // ── Find active session for this lead from globalSessionMaps ──
+  Map<String, dynamic>? _getActiveSession(String leadId, String leadName) {
+    final now = DateTime.now();
+    final candidates = globalSessionMaps.where((s) {
+      if (s['status'] == 'Completed' || s['status'] == 'Cancelled') {
+        return false;
+      }
+      final sLeadId = (s['linkedLeadId'] as String?) ?? '';
+      final sLeadName = (s['linkedLead'] as String?) ?? '';
+      return (sLeadId.isNotEmpty && sLeadId == leadId) ||
+          (sLeadId.isEmpty &&
+              sLeadName.toLowerCase() == leadName.toLowerCase());
+    }).toList();
+    if (candidates.isEmpty) return null;
+    candidates.sort((a, b) {
+      final aDate = a['date'] as DateTime;
+      final bDate = b['date'] as DateTime;
+      final aUpcoming = aDate.isAfter(now);
+      final bUpcoming = bDate.isAfter(now);
+      if (aUpcoming && !bUpcoming) return -1;
+      if (!aUpcoming && bUpcoming) return 1;
+      return aDate.compareTo(bDate);
+    });
+    return candidates.first;
+  }
+
   @override
   Widget build(BuildContext context) {
     final lead = widget.lead;
@@ -213,20 +305,25 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
     final isVip = lead.tags.contains('VIP');
     final isStarred = _isStarred;
 
-    // Get scheduled action from global map
-    final map = leads_screen.globalLeadMaps.firstWhere(
+    // Get data from global map
+    final map = globalLeadMaps.firstWhere(
       (m) => m['id'] == lead.id,
-      orElse: () => {},
+      orElse: () => <String, dynamic>{},
     );
-    final scheduledAction = map['scheduledAction'] as String? ?? '';
-    final scheduledActionDate = map['scheduledActionDate'] as String? ?? '';
-    final scheduledActionTime = map['scheduledActionTime'] as String? ?? '';
-    final createdAt = map['createdAt'] is DateTime
-        ? map['createdAt'] as DateTime
-        : lead.createdAt;
-    final showDateTime =
-        scheduledAction.isNotEmpty &&
-        scheduledAction.toLowerCase() != 'not interested';
+    final scheduledAction = (map['scheduledAction'] as String?) ?? '';
+    final scheduledActionDate = (map['scheduledActionDate'] as String?) ?? '';
+    final scheduledActionTime = (map['scheduledActionTime'] as String?) ?? '';
+    final createdAt = map.isEmpty
+        ? lead.createdAt
+        : map['createdAt'] as DateTime?;
+    final ownerName = (map['ownerName'] as String?) ?? lead.ownerName;
+    final ownerInitials =
+        (map['ownerInitials'] as String?) ?? lead.ownerInitials;
+    final isExistingCustomer = map['isExistingCustomer'] as bool? ?? false;
+
+    // Dynamic follow-up / session from global lists
+    final activeFollowUp = _getActiveFollowUp(lead.id, lead.name);
+    final activeSession = _getActiveSession(lead.id, lead.name);
 
     return FadeTransition(
       opacity: _fadeAnim,
@@ -333,18 +430,15 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Priority badge (Low/Medium/High)
                         StatusBadgeWidget(
                           label: lead.priority,
                           color: priorityColor,
                         ),
                         const SizedBox(width: 6),
-                        // Status badge (Won/Lost/New/etc.)
                         StatusBadgeWidget(
                           label: lead.status,
                           color: statusColor,
                         ),
-                        // VIP badge right after status if VIP
                         if (isVip) ...[
                           const SizedBox(width: 6),
                           Container(
@@ -369,8 +463,36 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
                             ),
                           ),
                         ],
+                        // Existing Customer tag
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isExistingCustomer
+                                ? AppTheme.success.withAlpha(20)
+                                : AppTheme.surface100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isExistingCustomer
+                                  ? AppTheme.success.withAlpha(100)
+                                  : AppTheme.surface200,
+                            ),
+                          ),
+                          child: Text(
+                            isExistingCustomer ? 'Existing ✓' : 'New Lead',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: isExistingCustomer
+                                  ? AppTheme.success
+                                  : AppTheme.textMuted,
+                            ),
+                          ),
+                        ),
                         const Spacer(),
-                        // Star toggle button
                         GestureDetector(
                           onTap: _toggleStar,
                           child: Container(
@@ -399,7 +521,6 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
                           ),
                         ),
                         const SizedBox(width: 6),
-                        // Relative age on the right
                         if (createdAt != null)
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -422,7 +543,6 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
                       ],
                     ),
 
-                    // Important badge if starred
                     if (isStarred) ...[
                       const SizedBox(height: 6),
                       Container(
@@ -461,42 +581,90 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
 
                     const SizedBox(height: 10),
 
-                    // ── NAME ──
-                    Text(
-                      lead.name,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
+                    // ── NAME + ASSIGNED MEMBER (side by side like call logs) ──
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                lead.name,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              if (lead.phone.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.phone_rounded,
+                                      size: 12,
+                                      color: AppTheme.textMuted,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        lead.phone,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12,
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        // Assigned member — same design as call logs
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 26,
+                                  height: 26,
+                                  decoration: BoxDecoration(
+                                    color: _ownerAvatarColor(ownerInitials),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      ownerInitials,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  ownerName,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
 
-                    // ── PHONE ──
-                    if (lead.phone.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.phone_rounded,
-                            size: 12,
-                            color: AppTheme.textMuted,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              lead.phone,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                color: AppTheme.textSecondary,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-
-                    // ── CREATED DATE + TIME (separate date and time) ──
+                    // ── CREATED DATE + TIME ──
                     if (createdAt != null) ...[
                       const SizedBox(height: 4),
                       Row(
@@ -563,94 +731,120 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
                       const SizedBox(height: 8),
                     ],
 
+                    // ── FOLLOW-UP BADGE (from globalFollowUpMaps) ──
+                    if (activeFollowUp != null) ...[
+                      _buildFollowUpBadge(activeFollowUp),
+                    ],
+
+                    // ── SESSION BADGE (from globalSessionMaps) ──
+                    if (activeSession != null) ...[
+                      _buildSessionBadge(activeSession),
+                    ],
+
                     // ── SCHEDULED ACTION BADGE ──
                     if (scheduledAction.isNotEmpty) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
-                          vertical: 5,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: _actionColor(scheduledAction).withAlpha(18),
-                          borderRadius: BorderRadius.circular(8),
+                          color: _actionColor(scheduledAction).withAlpha(15),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: _actionColor(scheduledAction).withAlpha(60),
+                            color: _actionColor(scheduledAction).withAlpha(50),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _actionIcon(scheduledAction),
-                              size: 12,
-                              color: _actionColor(scheduledAction),
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              scheduledAction,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: _actionColor(scheduledAction),
+                        child: scheduledAction.toLowerCase() == 'not interested'
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _actionIcon(scheduledAction),
+                                    size: 13,
+                                    color: _actionColor(scheduledAction),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Not Interested',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: _actionColor(scheduledAction),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _actionIcon(scheduledAction),
+                                    size: 13,
+                                    color: _actionColor(scheduledAction),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    scheduledAction,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: _actionColor(scheduledAction),
+                                    ),
+                                  ),
+                                  if (scheduledActionDate.isNotEmpty ||
+                                      scheduledActionTime.isNotEmpty) ...[
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                      ),
+                                      width: 1,
+                                      height: 12,
+                                      color: _actionColor(
+                                        scheduledAction,
+                                      ).withAlpha(80),
+                                    ),
+                                    if (scheduledActionDate.isNotEmpty) ...[
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 11,
+                                        color: _actionColor(scheduledAction),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        _formatScheduledDate(
+                                          scheduledActionDate,
+                                        ),
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          color: _actionColor(scheduledAction),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                    if (scheduledActionTime.isNotEmpty) ...[
+                                      const SizedBox(width: 5),
+                                      Icon(
+                                        Icons.access_time_rounded,
+                                        size: 11,
+                                        color: _actionColor(scheduledAction),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        _formatScheduledTime(
+                                          scheduledActionTime,
+                                        ),
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 11,
+                                          color: _actionColor(scheduledAction),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                       ),
-                      // Show scheduled date + time only when NOT "Not Interested"
-                      if (showDateTime &&
-                          (scheduledActionDate.isNotEmpty ||
-                              scheduledActionTime.isNotEmpty)) ...[
-                        const SizedBox(height: 5),
-                        Row(
-                          children: [
-                            if (scheduledActionDate.isNotEmpty) ...[
-                              Icon(
-                                Icons.event_rounded,
-                                size: 11,
-                                color: _actionColor(scheduledAction),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                _formatScheduledDate(scheduledActionDate),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  color: _actionColor(scheduledAction),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                            if (scheduledActionDate.isNotEmpty &&
-                                scheduledActionTime.isNotEmpty)
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                width: 1,
-                                height: 10,
-                                color: _actionColor(
-                                  scheduledAction,
-                                ).withAlpha(80),
-                              ),
-                            if (scheduledActionTime.isNotEmpty) ...[
-                              Icon(
-                                Icons.access_time_rounded,
-                                size: 11,
-                                color: _actionColor(scheduledAction),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                _formatScheduledTime(scheduledActionTime),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 11,
-                                  color: _actionColor(scheduledAction),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
                     ],
                   ],
                 ),
@@ -658,6 +852,112 @@ class _LeadCardWidgetState extends State<LeadCardWidget>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFollowUpBadge(Map<String, dynamic> fu) {
+    final dueDate = fu['dueDate'] as DateTime;
+    final type = (fu['type'] as String?) ?? 'Follow-up';
+    const color = Color(0xFF7C3AED);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withAlpha(15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withAlpha(50)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.repeat_rounded, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            'Follow-up · $type',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            width: 1,
+            height: 12,
+            color: color.withAlpha(80),
+          ),
+          const Icon(Icons.calendar_today_rounded, size: 11, color: color),
+          const SizedBox(width: 3),
+          Text(
+            _formatDateTime(dueDate),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionBadge(Map<String, dynamic> session) {
+    final date = session['date'] as DateTime;
+    final type = (session['type'] as String?) ?? 'Session';
+    const color = Color(0xFF0891B2);
+    IconData icon;
+    switch (type) {
+      case 'Video Call':
+        icon = Icons.videocam_rounded;
+        break;
+      case 'Appointment':
+        icon = Icons.people_rounded;
+        break;
+      case 'Call Back':
+        icon = Icons.phone_callback_rounded;
+        break;
+      default:
+        icon = Icons.event_rounded;
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withAlpha(15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withAlpha(50)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(
+            type,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            width: 1,
+            height: 12,
+            color: color.withAlpha(80),
+          ),
+          const Icon(Icons.calendar_today_rounded, size: 11, color: color),
+          const SizedBox(width: 3),
+          Text(
+            _formatDateTime(date),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
